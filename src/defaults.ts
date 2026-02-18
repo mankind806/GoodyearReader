@@ -10,8 +10,8 @@ declare const __PLUS__: boolean;
 
 export const DEFAULT_COLORS = {
     darkScheme: {
-        background: '#181a1b',
-        text: '#e8e6e3',
+        background: '#0B1D45',
+        text: '#D2D2D2',
     },
     lightScheme: {
         background: '#dcdad7',
@@ -35,7 +35,7 @@ export const DEFAULT_THEME: Theme = {
     lightSchemeBackgroundColor: DEFAULT_COLORS.lightScheme.background,
     lightSchemeTextColor: DEFAULT_COLORS.lightScheme.text,
     scrollbarColor: '',
-    selectionColor: 'auto',
+    selectionColor: '#FBBD00',
     styleSystemControls: __CHROMIUM_MV3__ ? false : !isCSSColorSchemePropSupported,
     lightColorScheme: 'Default',
     darkColorScheme: 'Default',
