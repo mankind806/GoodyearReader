@@ -17,6 +17,9 @@ declare global {
     interface NavigatorID {
         userAgentData: UserAgentData;
     }
+    interface Navigator {
+        deviceMemory?: number;
+    }
 }
 
 declare const __PLUS__: boolean;
