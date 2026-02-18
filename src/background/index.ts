@@ -1,6 +1,5 @@
 import {canInjectScript, keepListeningToEvents} from '../background/utils/extension-api';
 import type {ColorScheme, DebugMessageBGtoCS, DebugMessageBGtoUI, DebugMessageCStoBG, ExtensionData, News, UserSettings} from '../definitions';
-import {getHelpURL, UNINSTALL_URL} from '../utils/links';
 import {emulateColorScheme, isSystemDarkModeEnabled} from '../utils/media-query';
 import {DebugMessageTypeBGtoCS, DebugMessageTypeBGtoUI, DebugMessageTypeCStoBG} from '../utils/message';
 import {isFirefox} from '../utils/platform';
@@ -56,11 +55,6 @@ type TestMessage = {
 // Start extension
 const extension = Extension.start();
 
-const welcome = `  /''''\\
- (0)==(0)
-/__||||__\\
-Welcome to Dark Reader!`;
-console.log(welcome);
 
 declare const __DEBUG__: boolean;
 declare const __WATCH__: boolean;
@@ -132,13 +126,7 @@ if (__WATCH__) {
 
     listen();
 } else if (!__DEBUG__ && !__TEST__) {
-    chrome.runtime.onInstalled.addListener(({reason}) => {
-        if (reason === 'install') {
-            chrome.tabs.create({url: getHelpURL()});
-        }
-    });
-
-    chrome.runtime.setUninstallURL(UNINSTALL_URL);
+    // Welcome page logic removed
 }
 
 if (__TEST__) {
