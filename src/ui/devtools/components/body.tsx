@@ -44,7 +44,7 @@ export default function Body(props: DevtoolsProps): Malevic.Child {
     return (
         <body>
             <header>
-                <img id="logo" src="../assets/images/darkreader-type.svg" alt="Dark Reader" />
+                <h1 id="logo">GoodyearReader</h1>
                 <h1 id="title">Developer Tools</h1>
             </header>
             <TabPanel activeTabId={store.activeTabId} onTabChange={onTabChange}>

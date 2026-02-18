@@ -16,14 +16,9 @@
     var text = document.createTextNode([
         'Your Google Chrome (or Chromium) version ' + version + ' is out of date.',
         'In order to use this extension update your Google Chrome.',
-        'If you cannot update, install the old Dark Reader version, which works for at least Chrome 49, from '
+        'If you cannot update, update your browser.'
     ].join(' '));
-    var link = document.createElement('a');
-    link.href = 'https://chrome.google.com/webstore/detail/oibheihomapbjogmoabgfbkchjchpdfp';
-    link.target = '_blank';
-    link.textContent = 'here';
     warning.appendChild(text);
-    warning.appendChild(link);
     warning.style.backgroundColor = '#00222b';
     warning.style.boxSizing = 'border-box';
     warning.style.color = '#e96c4c';
