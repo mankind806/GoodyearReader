@@ -7,11 +7,11 @@ import {isCSSColorSchemePropSupported, isLayerRuleSupported} from '../../utils/p
 import {getMatches} from '../../utils/text';
 import {getAbsoluteURL} from '../../utils/url';
 import {readImageDetailsCache, writeImageDetailsCache} from '../cache';
-import {logWarn, logInfo} from '../utils/log';
+import {logWarn} from '../utils/log';
 
 import {cssURLRegex, getCSSURLValue, getCSSBaseBath} from './css-rules';
 import type {ImageDetails} from './image';
-import {getImageDetails, getFilteredImageURL, cleanImageProcessingCache, requestBlobURLCheck, isBlobURLCheckResultReady, tryConvertDataURLToBlobURL} from './image';
+import {getImageDetails, cleanImageProcessingCache, requestBlobURLCheck, isBlobURLCheckResultReady, tryConvertDataURLToBlobURL} from './image';
 import {modifyBackgroundColor, modifyBorderColor, modifyForegroundColor, modifyGradientColor, modifyShadowColor, clearColorModificationCache} from './modify-colors';
 import {getSheetScope} from './style-scope';
 import type {CSSVariableModifier, VariablesStore} from './variables';
@@ -540,29 +540,8 @@ export function getBgImageModifier(
         };
 
         const getBgImageValue = (imageDetails: ImageDetails, theme: Theme) => {
-            const {isDark, isLight, isTransparent, isLarge, width} = imageDetails;
-            let result: string | null;
-            const logSrc = imageDetails.src.startsWith('data:') ? 'data:' : imageDetails.src;
-            if (isLarge && isLight && !isTransparent && theme.mode === 1) {
-                logInfo(`Hiding large light image ${logSrc}`);
-                result = 'none';
-            } else if (isDark && isTransparent && theme.mode === 1 && width > 2) {
-                logInfo(`Inverting dark image ${logSrc}`);
-                const inverted = getFilteredImageURL(imageDetails, {...theme, sepia: clamp(theme.sepia + 10, 0, 100)});
-                result = `url("${inverted}")`;
-            } else if (isLight && !isTransparent && theme.mode === 1) {
-                logInfo(`Dimming light image ${logSrc}`);
-                const dimmed = getFilteredImageURL(imageDetails, theme);
-                result = `url("${dimmed}")`;
-            } else if (theme.mode === 0 && isLight) {
-                logInfo(`Applying filter to image ${logSrc}`);
-                const filtered = getFilteredImageURL(imageDetails, {...theme, brightness: clamp(theme.brightness - 10, 5, 200), sepia: clamp(theme.sepia + 10, 0, 100)});
-                result = `url("${filtered}")`;
-            } else {
-                logInfo(`Not modifying the image ${logSrc}`);
-                result = null;
-            }
-            return result;
+            // Goodyear Theme: Pragmatic Mode. Do not modify images.
+            return null;
         };
 
         const modifiers: Array<CSSValueModifier | null> = [];

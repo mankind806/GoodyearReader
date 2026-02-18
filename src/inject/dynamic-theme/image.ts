@@ -1,5 +1,4 @@
 import type {Theme} from '../../definitions';
-import {getSVGFilterMatrixValue} from '../../generators/svg-filter';
 import AsyncQueue from '../../utils/async-queue';
 import {getSRGBLightness} from '../../utils/color';
 import {loadAsBlob, loadAsDataURL} from '../../utils/network';
@@ -265,48 +264,19 @@ document.addEventListener('securitypolicyviolation', onCSPError);
 
 const objectURLs = new Set<string>();
 
-export function getFilteredImageURL({dataURL, width, height, useViewBox}: ImageDetails, theme: Theme): string {
-    if (dataURL.startsWith('data:image/svg+xml')) {
-        dataURL = escapeXML(dataURL);
+export function getFilteredImageURL({dataURL}: ImageDetails, theme: Theme): string {
+    // Goodyear Theme: Pragmatic Mode. Return original dataURL.
+    if (isBlobURLSupported) {
+        const blob = tryConvertDataURLToBlobSync(dataURL);
+        if (blob) {
+            const objectURL = URL.createObjectURL(blob);
+            objectURLs.add(objectURL);
+            return objectURL;
+        }
     }
-    const matrix = getSVGFilterMatrixValue(theme);
-    const size = useViewBox ? `viewBox="0 0 ${width} ${height}"` : `width="${width}" height="${height}"`;
-    const svg = [
-        `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ${size}>`,
-        '<defs>',
-        '<filter id="darkreader-image-filter">',
-        `<feColorMatrix type="matrix" values="${matrix}" />`,
-        '</filter>',
-        '</defs>',
-        `<image width="${width}" height="${height}" filter="url(#darkreader-image-filter)" xlink:href="${dataURL}" />`,
-        '</svg>',
-    ].join('');
-
-    if (!isBlobURLSupported) {
-        return `data:image/svg+xml;base64,${btoa(svg)}`;
-    }
-
-    const bytes = new Uint8Array(svg.length);
-    for (let i = 0; i < svg.length; i++) {
-        bytes[i] = svg.charCodeAt(i);
-    }
-    const blob = new Blob([bytes], {type: 'image/svg+xml'});
-    const objectURL = URL.createObjectURL(blob);
-    objectURLs.add(objectURL);
-    return objectURL;
+    return dataURL;
 }
 
-const xmlEscapeChars: Record<string, string> = {
-    '<': '&lt;',
-    '>': '&gt;',
-    '&': '&amp;',
-    '\'': '&apos;',
-    '"': '&quot;',
-};
-
-function escapeXML(str: string): string {
-    return str.replace(/[<>&'"]/g, (c: string) => xmlEscapeChars[c] ?? c);
-}
 
 const dataURLBlobURLs = new Map<number, string>();
 
