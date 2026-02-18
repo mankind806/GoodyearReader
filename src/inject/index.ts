@@ -131,18 +131,10 @@ function onMessage(message: MessageBGtoCS | MessageUItoCS | DebugMessageBGtoCS) 
             break;
         }
         case MessageTypeBGtoCS.ADD_DYNAMIC_THEME: {
-            const {theme, fixes, isIFrame, detectDarkTheme, detectorHints} = message.data;
+            const {theme, fixes, isIFrame} = message.data;
             removeStyle();
             createOrUpdateDynamicTheme(theme, fixes, isIFrame);
             writeEnabledForHost(true);
-            if (detectDarkTheme) {
-                runDarkThemeDetector((hasDarkTheme) => {
-                    if (hasDarkTheme) {
-                        removeDynamicTheme();
-                        onDarkThemeDetected();
-                    }
-                }, detectorHints);
-            }
             if (__TEST__) {
                 darkReaderDynamicThemeStateForTesting = 'ready';
                 sendMessageForTesting('darkreader-dynamic-theme-ready');
