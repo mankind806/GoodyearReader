@@ -111,8 +111,7 @@ export default function VirtualScroll(props: VirtualScrollProps) {
             onrender: (node) => {
                 rootNode = node;
                 rootDidRender && rootDidRender(rootNode);
-                // TODO: remove type cast after dependency update
-                renderContent(rootNode, isNaN(props.scrollToIndex!) ? -1 : props.scrollToIndex!);
+                renderContent(rootNode, props.scrollToIndex != null && !isNaN(props.scrollToIndex) ? props.scrollToIndex : -1);
             },
             onscroll: () => {
                 if (rootNode.scrollTop === prevScrollTop) {
