@@ -20,6 +20,7 @@ declare const __CHROMIUM_MV3__: boolean;
 type HeaderProps = ExtWrapper & {
     onMoreSiteSettingsClick: () => void;
     onMoreToggleSettingsClick: () => void;
+    moreToggleSettingsOpen: boolean;
 };
 
 export function getAutomationMessage(props: {data: ExtensionData}) {
@@ -65,7 +66,7 @@ export function getSiteToggleMessage(props: ExtWrapper) {
 }
 
 function Header(props: HeaderProps) {
-    const {data, actions, onMoreSiteSettingsClick, onMoreToggleSettingsClick} = props;
+    const {data, actions, onMoreSiteSettingsClick, onMoreToggleSettingsClick, moreToggleSettingsOpen} = props;
 
     function toggleApp(enabled: boolean) {
         toggleExtension(props, enabled);
@@ -132,6 +133,12 @@ function Header(props: HeaderProps) {
                             : <SystemIcon />))}
                 </span>
             </div>
+            <MoreToggleSettings
+                data={data}
+                actions={actions}
+                isExpanded={moreToggleSettingsOpen}
+                onClose={onMoreToggleSettingsClick}
+            />
         </header>
     );
 }
@@ -140,5 +147,5 @@ export {
     Header,
     MoreNewHighlight,
     MoreSiteSettings,
-    MoreToggleSettings, // TODO: Implement portals to place elements into <body>.
+    MoreToggleSettings,
 };

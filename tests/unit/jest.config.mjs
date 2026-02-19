@@ -11,6 +11,8 @@ const config = {
     moduleFileExtensions: ['ts', 'tsx', 'js'],
     moduleNameMapper: {
         '@plus/(.*)': ['<rootDir>/src/stubs/$1'],
+        '^malevic$': '<rootDir>/node_modules/malevic/umd/index.js',
+        '^malevic/(.*)$': '<rootDir>/node_modules/malevic/umd/$1.js',
     },
     transform: {'^.+\\.ts(x?)$': ['ts-jest', {tsconfig: '<rootDir>/tests/unit/tsconfig.json'}]},
     globals: {
