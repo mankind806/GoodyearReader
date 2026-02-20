@@ -1,5 +1,5 @@
 import {formatCSS} from '../../../src/utils/css-text/format-css';
-import {getParenthesesRange} from '../../../src/utils/text';
+import {getHashCode, getParenthesesRange} from '../../../src/utils/text';
 
 test('CSS formatting', () => {
     expect(formatCSS('div { color: red; }'))
@@ -109,4 +109,12 @@ test('Parenthesis Range', () => {
     expect(getParenthesesRange('rgb(0, var(--x, var(--y)), 0)')).toEqual({start: 3, end: 29});
     expect(getParenthesesRange('rgb(0, var(--x, var(--y)), 0)', 4)).toEqual({start: 10, end: 25});
     expect(getParenthesesRange('rgb(0, var(--x, var(--y)), 0), rgb(0, 0, 0)')).toEqual({start: 3, end: 29});
+});
+
+test('Hash Code', () => {
+    expect(getHashCode('')).toBe(0);
+    expect(getHashCode('abc')).toBe(96354);
+    expect(getHashCode('Hello World')).toBe(-862545276);
+    expect(getHashCode('Hello World')).toBe(getHashCode('Hello World'));
+    expect(getHashCode('Hello World')).not.toBe(getHashCode('hello world'));
 });
