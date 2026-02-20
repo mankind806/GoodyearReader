@@ -455,18 +455,19 @@ export default class TabManager {
 
         (await queryTabs({discarded: false}))
             .filter((tab) => Boolean(TabManager.tabs[tab.id!]))
-            .forEach((tab) => {
+            .forEach(async (tab) => {
+                const tabURL = await TabManager.getTabURL(tab);
+
+                // Check if hostname are equal when we only want to update active tab.
+                if (onlyUpdateActiveTab && getURLHostOrProtocol(tabURL) !== activeTabHostname) {
+                    return;
+                }
+
                 const frames = TabManager.tabs[tab.id!];
                 Object.entries(frames)
                     .filter(([, {state}]) => state === DocumentState.ACTIVE || state === DocumentState.PASSIVE)
-                    .forEach(async ([id, {url, documentId, scriptId, isTop}]) => {
+                    .forEach(([id, {url, documentId, scriptId, isTop}]) => {
                         const frameId = Number(id);
-                        const tabURL = await TabManager.getTabURL(tab);
-
-                        // Check if hostname are equal when we only want to update active tab.
-                        if (onlyUpdateActiveTab && getURLHostOrProtocol(tabURL) !== activeTabHostname) {
-                            return;
-                        }
 
                         const message = TabManager.getTabMessage(tabURL, url!, isTop || false);
                         message.scriptId = scriptId;
