@@ -1,5 +1,13 @@
 import {formatCSS} from '../../../src/utils/css-text/format-css';
-import {getParenthesesRange} from '../../../src/utils/text';
+import {formatArray, getParenthesesRange} from '../../../src/utils/text';
+
+test('Format array', () => {
+    expect(formatArray([])).toBe('');
+    expect(formatArray(['a'])).toBe('a\n');
+    expect(formatArray(['a', 'b'])).toBe('a\nb\n');
+    expect(formatArray(['a', ''])).toBe('a\n\n');
+    expect(formatArray(['', ''])).toBe('\n\n');
+});
 
 test('CSS formatting', () => {
     expect(formatCSS('div { color: red; }'))
