@@ -19,6 +19,9 @@
         "noImplicitAny": true,
         "strictNullChecks": true,
         "inlineSourceMap": true,
+        "jsx": "react",
+        "jsxFactory": "m",
+        "jsxFragmentFactory": "m.Fragment",
         "paths": {
             "@plus/*": ["../../src/stubs/*"]
         }

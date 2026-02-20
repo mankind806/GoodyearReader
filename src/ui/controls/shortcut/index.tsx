@@ -70,12 +70,12 @@ export default function ShortcutLink(props: ShortcutLinkProps) {
                     // e.code represents the physical location of the key, ignoring the keyboard layout
                     // Therefore we use the e.key converted to upper case.
                     key = e.key.toUpperCase();
-                } else if (e.keyCode !== 0) {
+                } else if (e.key !== 'Unidentified') {
                     // This is a letter key on a non-latin layout or on Latin layout with accents,
-                    // but it is internally reproducible by Firefox
-                    // This check relies on deprecated e.keyCode because it actually represents the internal
-                    // implementation-dependent value. The actual key comes from non-deprecated e.code
-                    // For details see https://developer.mozilla.org/docs/Web/API/KeyboardEvent/keyCode
+                    // but it is internally reproducible by Firefox.
+                    // We check e.key !== 'Unidentified' because some keys might be unidentified
+                    // and not usable as shortcuts.
+                    // The actual key comes from non-deprecated e.code.
                     key = e.code.substring(3);
                 }
                 // This letter is not well-represented by Firefox, probably because it is a Latin-like
