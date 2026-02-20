@@ -611,12 +611,11 @@ async function replaceCSSImports(cssText: string, basePath: string, cache = new 
     cssText = replaceCSSRelativeURLsWithAbsolute(cssText, basePath);
 
     const importMatches = getMatchesWithOffsets(cssImportRegex, cssText);
-    let prev: {text: string; offset: number} | null = null;
+    const tasks: Array<Promise<string>> = [];
+    let prevImportEnd = 0;
     let shouldIgnoreImportsInBetween = false;
-    let diff = 0;
+
     for (const match of importMatches) {
-        let importedCSS: string;
-        const prevImportEnd = prev ? (prev.offset + prev.text.length) : 0;
         const nextImportStart = match.offset;
         const openBraceIndex = cssText.indexOf('{', prevImportEnd);
         const closeBraceIndex = cssText.indexOf('}', prevImportEnd);
@@ -627,33 +626,41 @@ async function replaceCSSImports(cssText: string, basePath: string, cache = new 
             )
         ) {
             shouldIgnoreImportsInBetween = true;
-            importedCSS = '';
+            tasks.push(Promise.resolve(''));
         } else {
             const importURL = getCSSImportURL(match.text);
             const absoluteURL = getAbsoluteURL(basePath, importURL);
             if (cache.has(absoluteURL)) {
-                importedCSS = cache.get(absoluteURL)!;
+                tasks.push(Promise.resolve(cache.get(absoluteURL)!));
             } else {
-                try {
-                    importedCSS = await loadText(absoluteURL);
-                    cache.set(absoluteURL, importedCSS);
-                    importedCSS = await replaceCSSImports(importedCSS, getCSSBaseBath(absoluteURL), cache);
-                } catch (err) {
-                    logWarn(err);
-                    importedCSS = '';
-                }
+                tasks.push((async () => {
+                    try {
+                        let importedCSS = await loadText(absoluteURL);
+                        cache.set(absoluteURL, importedCSS);
+                        importedCSS = await replaceCSSImports(importedCSS, getCSSBaseBath(absoluteURL), cache);
+                        return importedCSS;
+                    } catch (err) {
+                        logWarn(err);
+                        return '';
+                    }
+                })());
             }
         }
-        cssText = (
-            cssText.substring(0, match.offset + diff) +
-            importedCSS +
-            cssText.substring(match.offset + match.text.length + diff)
-        );
-        diff += importedCSS.length - match.text.length;
-        prev = match;
+        prevImportEnd = match.offset + match.text.length;
     }
 
-    cssText = cssText.trim();
+    const importedCSSs = await Promise.all(tasks);
 
-    return cssText;
+    let resultCSS = '';
+    let lastIndex = 0;
+    for (let i = 0; i < importMatches.length; i++) {
+        const match = importMatches[i];
+        const importedCSS = importedCSSs[i];
+        resultCSS += cssText.substring(lastIndex, match.offset);
+        resultCSS += importedCSS;
+        lastIndex = match.offset + match.text.length;
+    }
+    resultCSS += cssText.substring(lastIndex);
+
+    return resultCSS.trim();
 }
