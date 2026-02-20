@@ -3,6 +3,7 @@
     "compilerOptions": {
         "target": "ESNext",
         "module": "CommonJS",
+        "baseUrl": "../../src",
         "lib": [
             "ESNext",
             "Dom"
@@ -20,7 +21,7 @@
         "strictNullChecks": true,
         "inlineSourceMap": true,
         "paths": {
-            "@plus/*": ["../../src/stubs/*"]
+            "@plus/*": ["stubs/*"]
         }
     }
 }

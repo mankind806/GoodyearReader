@@ -145,7 +145,8 @@ export function createStyleSheetModifier(): StyleSheetModifier {
         interface ReadyStyleRule {
             isGroup: false;
             selector: string;
-            declarations: ReadyDeclaration[];
+            declarations: ReadyDeclaration | null;
+            declarationsTail: ReadyDeclaration | null;
         }
 
         interface ReadyDeclaration {
@@ -155,6 +156,8 @@ export function createStyleSheetModifier(): StyleSheetModifier {
             sourceValue: string;
             asyncKey?: number;
             varKey?: number;
+            next: ReadyDeclaration | null;
+            prev: ReadyDeclaration | null;
         }
 
         function setRule(target: CSSBuilder, index: number, rule: ReadyStyleRule) {
@@ -180,11 +183,13 @@ export function createStyleSheetModifier(): StyleSheetModifier {
             }
 
             let ruleText = `${selectorText} {`;
-            for (const dec of declarations) {
+            let dec = declarations;
+            while (dec) {
                 const {property, value, important} = dec;
                 if (value) {
                     ruleText += ` ${property}: ${value}${important ? ' !important' : ''};`;
                 }
+                dec = dec.next;
             }
             ruleText += ' }';
 
@@ -228,14 +233,24 @@ export function createStyleSheetModifier(): StyleSheetModifier {
 
         modRules.filter((r) => r).forEach(({selector, declarations, parentRule}) => {
             const group = getGroup(parentRule);
-            const readyStyleRule: ReadyStyleRule = {selector, declarations: [], isGroup: false};
-            const readyDeclarations = readyStyleRule.declarations;
+            const readyStyleRule: ReadyStyleRule = {selector, declarations: null, declarationsTail: null, isGroup: false};
             group.rules.push(readyStyleRule);
+
+            function appendDeclaration(declaration: ReadyDeclaration) {
+                if (readyStyleRule.declarationsTail) {
+                    readyStyleRule.declarationsTail.next = declaration;
+                    declaration.prev = readyStyleRule.declarationsTail;
+                    readyStyleRule.declarationsTail = declaration;
+                } else {
+                    readyStyleRule.declarations = declaration;
+                    readyStyleRule.declarationsTail = declaration;
+                }
+            }
 
             function handleAsyncDeclaration(property: string, modified: Promise<string | null>, important: boolean, sourceValue: string) {
                 const asyncKey = ++asyncDeclarationCounter;
-                const asyncDeclaration: ReadyDeclaration = {property, value: null, important, asyncKey, sourceValue};
-                readyDeclarations.push(asyncDeclaration);
+                const asyncDeclaration: ReadyDeclaration = {property, value: null, important, asyncKey, sourceValue, next: null, prev: null};
+                appendDeclaration(asyncDeclaration);
                 const currentRenderId = renderId;
                 modified.then((asyncValue) => {
                     if (!asyncValue || isAsyncCancelled() || currentRenderId !== renderId) {
@@ -249,39 +264,84 @@ export function createStyleSheetModifier(): StyleSheetModifier {
                         rebuildAsyncRule(asyncKey);
                     });
                 });
+                return asyncDeclaration;
             }
 
             function handleVarDeclarations(property: string, modified: ReturnType<CSSVariableModifier>, important: boolean, sourceValue: string) {
                 const {declarations: varDecs, onTypeChange} = modified;
                 const varKey = ++varDeclarationCounter;
                 const currentRenderId = renderId;
-                const initialIndex = readyDeclarations.length;
-                let oldDecs: ReadyDeclaration[] = [];
+
+                let firstNode: ReadyDeclaration | null = null;
+                let lastNode: ReadyDeclaration | null = null;
+
+                const createNode = (property: string, value: string | null, important: boolean, sourceValue: string): ReadyDeclaration => {
+                    return {property, value, important, sourceValue, varKey, next: null, prev: null};
+                };
+
                 if (varDecs.length === 0) {
-                    const tempDec = {property, value: sourceValue, important, sourceValue, varKey};
-                    readyDeclarations.push(tempDec);
-                    oldDecs = [tempDec];
+                    const tempDec = createNode(property, sourceValue, important, sourceValue);
+                    appendDeclaration(tempDec);
+                    firstNode = tempDec;
+                    lastNode = tempDec;
                 }
                 varDecs.forEach((mod) => {
+                    let node: ReadyDeclaration;
                     if (mod.value instanceof Promise) {
-                        handleAsyncDeclaration(mod.property, mod.value, important, sourceValue);
+                        node = handleAsyncDeclaration(mod.property, mod.value, important, sourceValue);
                     } else {
-                        const readyDec = {property: mod.property, value: mod.value, important, sourceValue, varKey};
-                        readyDeclarations.push(readyDec);
-                        oldDecs.push(readyDec);
+                        node = createNode(mod.property, mod.value as string, important, sourceValue);
+                        appendDeclaration(node);
                     }
+                    if (!firstNode) {
+                        firstNode = node;
+                    }
+                    lastNode = node;
                 });
+
                 onTypeChange.addListener((newDecs) => {
                     if (isAsyncCancelled() || currentRenderId !== renderId) {
                         return;
                     }
-                    const readyVarDecs = newDecs.map((mod) => {
-                        return {property: mod.property, value: mod.value as string, important, sourceValue, varKey};
+                    const newNodes: ReadyDeclaration[] = newDecs.map((mod) => {
+                        return createNode(mod.property, mod.value as string, important, sourceValue);
                     });
-                    // TODO: Don't search for index, store some way or use Linked List.
-                    const index = readyDeclarations.indexOf(oldDecs[0], initialIndex);
-                    readyDeclarations.splice(index, oldDecs.length, ...readyVarDecs);
-                    oldDecs = readyVarDecs;
+                    if (newNodes.length === 0) {
+                        newNodes.push(createNode(property, null, important, sourceValue));
+                    }
+
+                    const newHead = newNodes[0];
+                    const newTail = newNodes[newNodes.length - 1];
+
+                    // Link new nodes
+                    for (let i = 0; i < newNodes.length - 1; i++) {
+                        newNodes[i].next = newNodes[i + 1];
+                        newNodes[i + 1].prev = newNodes[i];
+                    }
+
+                    // Replace range [firstNode, lastNode]
+                    const prev = firstNode!.prev;
+                    const next = lastNode!.next;
+
+                    if (prev) {
+                        prev.next = newHead;
+                        newHead.prev = prev;
+                    } else {
+                        readyStyleRule.declarations = newHead;
+                        newHead.prev = null;
+                    }
+
+                    if (next) {
+                        next.prev = newTail;
+                        newTail.next = next;
+                    } else {
+                        readyStyleRule.declarationsTail = newTail;
+                        newTail.next = null;
+                    }
+
+                    firstNode = newHead;
+                    lastNode = newTail;
+
                     rebuildVarRule(varKey);
                 });
                 varTypeChangeCleaners.add(() => onTypeChange.removeListeners());
@@ -295,10 +355,10 @@ export function createStyleSheetModifier(): StyleSheetModifier {
                     } else if (property.startsWith('--')) {
                         handleVarDeclarations(property, modified as any, important, sourceValue);
                     } else {
-                        readyDeclarations.push({property, value: modified as string, important, sourceValue});
+                        appendDeclaration({property, value: modified as string, important, sourceValue, next: null, prev: null});
                     }
                 } else {
-                    readyDeclarations.push({property, value, important, sourceValue});
+                    appendDeclaration({property, value, important, sourceValue, next: null, prev: null});
                 }
             });
         });
@@ -346,14 +406,17 @@ export function createStyleSheetModifier(): StyleSheetModifier {
 
             iterateReadyRules(rootReadyGroup, sheet, (rule, target) => {
                 const index = target.cssRules.length;
-                rule.declarations.forEach(({asyncKey, varKey}) => {
+                let dec = rule.declarations;
+                while (dec) {
+                    const {asyncKey, varKey} = dec;
                     if (asyncKey != null) {
                         asyncDeclarations.set(asyncKey, {rule, target, index});
                     }
                     if (varKey != null) {
                         varDeclarations.set(varKey, {rule, target, index});
                     }
-                });
+                    dec = dec.next;
+                }
                 setRule(target, index, rule);
             });
         }
