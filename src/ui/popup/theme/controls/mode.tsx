@@ -26,12 +26,14 @@ export default function Mode(props: {mode: ThemeEngine; onChange: (mode: ThemeEn
                     options={modes}
                     onChange={props.onChange}
                 />
-                <span
+                <button
                     class={{
                         'static-edit-button': true,
                         'static-edit-button--hidden': props.mode !== ThemeEngine.staticTheme,
                     }}
                     onclick={openCSSEditor}
+                    aria-label="Edit stylesheet"
+                    type="button"
                 />
             </div>
         </ThemeControl>
