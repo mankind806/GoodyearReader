@@ -108,10 +108,7 @@ export const isCSSColorSchemePropSupported = __CHROMIUM_MV3__ || (() => {
             return true;
         }
 
-        // TODO: remove the following code after enforcing strong CSP in all builds
-        // This feature detection method requires weak or missing CSP in manifest.json
-        el.setAttribute('style', 'color-scheme: dark');
-        return el.style.colorScheme === 'dark';
+        return false;
     } catch (e) {
         return false;
     }
