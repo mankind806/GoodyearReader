@@ -1,40 +1,54 @@
 
+// Mock global document before imports
+const mockContext = {
+    fillStyle: '',
+    fillRect: jest.fn(),
+    getImageData: jest.fn().mockReturnValue({
+        data: [255, 0, 0, 255] // Red by default
+    }),
+};
+
+const mockCanvas = {
+    width: 0,
+    height: 0,
+    getContext: jest.fn().mockReturnValue(mockContext),
+};
+
+const mockCreateElement = jest.fn((tagName: string) => {
+    if (tagName === 'canvas') {
+        return mockCanvas;
+    }
+    return {};
+});
+
+(global as any).document = {
+    createElement: mockCreateElement,
+};
+
+// We need to delay import of color module until after document is mocked?
+// Actually, color.ts imports are top-level but code inside domParseColor is runtime.
+// BUT, color.ts might reference document at top level? No, checked file, it doesn't.
+// Except `isDefinedSelectorSupported` in platform.ts might? No, that's platform.ts.
+
+import {parse} from '../../../src/utils/color';
+
 describe('domParseColor', () => {
-    let parse: typeof import('../../../src/utils/color').parse;
     let originalOffscreenCanvas: any;
-    let originalDocument: any;
-    let createdCanvases: any[];
     let createdOffscreenCanvases: any[];
+    let parseModule: typeof import('../../../src/utils/color');
 
     beforeEach(async () => {
-        jest.resetModules();
         originalOffscreenCanvas = global.OffscreenCanvas;
-        originalDocument = (global as any).document;
-        createdCanvases = [];
         createdOffscreenCanvases = [];
 
-        // Mock document.createElement('canvas')
-        const mockDocument = {
-            createElement: jest.fn((tagName: string) => {
-                if (tagName === 'canvas') {
-                    const canvas = {
-                        width: 0,
-                        height: 0,
-                        getContext: jest.fn().mockReturnValue({
-                            fillStyle: '',
-                            fillRect: jest.fn(),
-                            getImageData: jest.fn().mockReturnValue({
-                                data: [255, 0, 0, 255] // Red
-                            }),
-                        }),
-                    };
-                    createdCanvases.push(canvas);
-                    return canvas as any;
-                }
-                return {};
-            }),
-        };
-        (global as any).document = mockDocument;
+        // Reset mocks
+        mockCreateElement.mockClear();
+        mockCanvas.getContext.mockClear();
+        mockContext.getImageData.mockClear();
+        // Reset default mock return
+        mockContext.getImageData.mockReturnValue({
+            data: [255, 0, 0, 255]
+        });
 
         // Mock OffscreenCanvas
         global.OffscreenCanvas = class MockOffscreenCanvas {
@@ -56,56 +70,44 @@ describe('domParseColor', () => {
             }
         } as any;
 
-        const colorModule = await import('../../../src/utils/color');
-        parse = colorModule.parse;
+        jest.resetModules();
+        // re-mock document because resetModules might clear globals? No, it shouldn't clear globals.
+        // But we need to re-import the module to get a fresh instance of `let canvas`.
+        parseModule = await import('../../../src/utils/color');
     });
 
     afterEach(() => {
-        global.OffscreenCanvas = originalOffscreenCanvas;
-        (global as any).document = originalDocument;
         jest.restoreAllMocks();
+        global.OffscreenCanvas = originalOffscreenCanvas;
     });
 
     test('should use OffscreenCanvas if available', () => {
         // color-mix triggers domParseColor
-        const result = parse('color-mix(in srgb, red, blue)');
+        const result = parseModule.parse('color-mix(in srgb, red, blue)');
         expect(createdOffscreenCanvases.length).toBe(1);
-        expect(createdCanvases.length).toBe(0);
-        expect(result).toEqual({r: 0, g: 255, b: 0, a: 1}); // Expect Green from MockOffscreenCanvas
+        expect(mockCreateElement).not.toHaveBeenCalledWith('canvas');
+        // Expect Green from MockOffscreenCanvas
+        expect(result).toEqual({r: 0, g: 255, b: 0, a: 1});
     });
 
     test('should use document.createElement if OffscreenCanvas is not available', async () => {
-        // Reset modules and remove OffscreenCanvas
-        jest.resetModules();
         delete (global as any).OffscreenCanvas;
-        (global as any).document = {
-            createElement: jest.fn((tagName: string) => {
-                if (tagName === 'canvas') {
-                    const canvas = {
-                        width: 0,
-                        height: 0,
-                        getContext: jest.fn().mockReturnValue({
-                            fillStyle: '',
-                            fillRect: jest.fn(),
-                            getImageData: jest.fn().mockReturnValue({
-                                data: [255, 0, 0, 255] // Red
-                            }),
-                        }),
-                    };
-                    createdCanvases.push(canvas);
-                    return canvas as any;
-                }
-                return {};
-            }),
-        };
+        jest.resetModules();
+        parseModule = await import('../../../src/utils/color');
 
-        // Re-import to simulate environment without OffscreenCanvas
-        const colorModule = await import('../../../src/utils/color');
-        parse = colorModule.parse;
-
-        const result = parse('color(display-p3 1 0 0)');
+        const result = parseModule.parse('color(display-p3 1 0 0)');
         expect(createdOffscreenCanvases.length).toBe(0);
-        expect(createdCanvases.length).toBe(1);
-        expect(result).toEqual({r: 255, g: 0, b: 0, a: 1}); // Expect Red from MockCanvas
+        expect(mockCreateElement).toHaveBeenCalledWith('canvas');
+        // Expect Red from MockCanvas
+        expect(result).toEqual({r: 255, g: 0, b: 0, a: 1});
+    });
+
+    test('should cache the context (reuse canvas)', () => {
+        const result1 = parseModule.parse('color-mix(in srgb, red, blue)');
+        const result2 = parseModule.parse('color-mix(in srgb, blue, red)'); // Different color string
+
+        expect(createdOffscreenCanvases.length).toBe(1);
+        expect(result1).toEqual({r: 0, g: 255, b: 0, a: 1});
+        expect(result2).toEqual({r: 0, g: 255, b: 0, a: 1});
     });
 });
