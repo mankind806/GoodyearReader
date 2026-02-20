@@ -2,6 +2,7 @@ import {m} from 'malevic';
 import {sync} from 'malevic/dom';
 
 import type {DevToolsData, ExtensionData} from '../../definitions';
+import {isSafeSelector} from '../../utils/validation';
 import Connector from '../connect/connector';
 
 import Body from './components/body';
@@ -53,6 +54,10 @@ if (__TEST__) {
                 case 'devtools-click': {
                     let attempts = 4;
                     const click = () => {
+                        if (!isSafeSelector(data)) {
+                            respond({id, error: `Safe selector validation failed: ${data}`});
+                            return;
+                        }
                         const element: HTMLElement | null = document.querySelector(data);
                         if (element) {
                             element.click();
@@ -72,6 +77,10 @@ if (__TEST__) {
                     // The required element may not exist yet
                     let attempts = 4;
                     const check = () => {
+                        if (!isSafeSelector(data)) {
+                            respond({id, error: `Safe selector validation failed: ${data}`});
+                            return;
+                        }
                         const element: HTMLElement | null = document.querySelector(data);
                         if (element) {
                             respond({id, data: true});
