@@ -7,6 +7,7 @@ import {getLocalMessage} from '../../../../utils/locales';
 import {isMatchMediaChangeEventListenerBuggy} from '../../../../utils/platform';
 import {Button, CheckBox, Shortcut, TextBox, TimeRangePicker} from '../../../controls';
 import {KeyboardIcon} from '../../../icons';
+import Portal from '../portal';
 
 type MoreToggleSettingsProps = ExtWrapper & {
     isExpanded: boolean;
@@ -78,18 +79,19 @@ export default function MoreToggleSettings({data, actions, isExpanded, onClose}:
     }
 
     return (
-        <div
-            class={{
-                'header__more-toggle-settings': true,
-                'header__more-settings': true,
-                'header__more-settings--expanded': isExpanded,
-            }}
-        >
-            <div class="header__more-settings__top">
-                <span class="header__more-settings__top__text">{getLocalMessage('automation')}</span>
-                <span class="header__more-settings__top__close" role="button" onclick={onClose}>✕</span>
-            </div>
-            <div class="header__more-settings__content">
+        <Portal target="more-toggle-settings">
+            <div
+                class={{
+                    'header__more-toggle-settings': true,
+                    'header__more-settings': true,
+                    'header__more-settings--expanded': isExpanded,
+                }}
+            >
+                <div class="header__more-settings__top">
+                    <span class="header__more-settings__top__text">{getLocalMessage('automation')}</span>
+                    <span class="header__more-settings__top__close" role="button" onclick={onClose}>✕</span>
+                </div>
+                <div class="header__more-settings__content">
                 <div class="header__more-settings__line">
                     <CheckBox
                         checked={data.settings.automation.mode === AutomationMode.TIME}
@@ -195,7 +197,8 @@ export default function MoreToggleSettings({data, actions, isExpanded, onClose}:
                         </p>
                     </div>
                 ) : null}
+                </div>
             </div>
-        </div>
+        </Portal>
     );
 }
