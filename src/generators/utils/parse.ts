@@ -21,15 +21,29 @@ export interface SitesFixesParserOptions<T> {
 
 export type SiteFixesIndex = URLTrie<[number, number]>;
 
+const BLOCK_DELIMITER_REGEX = /^\s*={2,}\s*$/gm;
+const COMMAND_REGEX = /^[A-Z]+(\s[A-Z]+){0,2}$/;
+
+function isURLPattern(url: string): boolean {
+    const isRegex = url.startsWith('/') && url.endsWith('/');
+    if (isRegex) {
+        return true;
+    }
+    if (url.startsWith('#') || url.startsWith('//')) {
+        return false;
+    }
+    return !/\s/.test(url);
+}
+
 export function parseSitesFixesConfig<T extends SiteProps>(text: string, options: SitesFixesParserOptions<T>): T[] {
     const sites: T[] = [];
 
-    const blocks = text.replace(/\r/g, '').split(/^\s*={2,}\s*$/gm);
+    const blocks = text.replace(/\r/g, '').split(BLOCK_DELIMITER_REGEX);
     blocks.forEach((block) => {
         const lines = block.split('\n');
         const commandIndices: number[] = [];
         lines.forEach((ln, i) => {
-            if (ln.match(/^[A-Z]+(\s[A-Z]+){0,2}$/)) {
+            if (ln.match(COMMAND_REGEX)) {
                 commandIndices.push(i);
             }
         });
@@ -39,7 +53,7 @@ export function parseSitesFixesConfig<T extends SiteProps>(text: string, options
         }
 
         const siteFix = {
-            url: parseArray(lines.slice(0, commandIndices[0]).join('\n')) as readonly string[],
+            url: parseArray(lines.slice(0, commandIndices[0]).join('\n')).filter(isURLPattern) as readonly string[],
         } as T;
 
         commandIndices.forEach((commandIndex, i) => {
@@ -69,12 +83,11 @@ export function getDomain(url: string): string {
 }
 
 function processSiteFixesConfigBlock(text: string, offsets: Array<[number, number]>, recordStart: number, recordEnd: number, urls: Array<readonly string[]>) {
-    // TODO: more formal definition of URLs and delimiters
     const block = text.substring(recordStart, recordEnd);
     const lines = block.split('\n');
     const commandIndices: number[] = [];
     lines.forEach((ln, i) => {
-        if (ln.match(/^[A-Z]+(\s[A-Z]+){0,2}$/)) {
+        if (ln.match(COMMAND_REGEX)) {
             commandIndices.push(i);
         }
     });
@@ -85,7 +98,7 @@ function processSiteFixesConfigBlock(text: string, offsets: Array<[number, numbe
 
     offsets.push([recordStart, recordEnd - recordStart]);
 
-    const urls_ = parseArray(lines.slice(0, commandIndices[0]).join('\n'));
+    const urls_ = parseArray(lines.slice(0, commandIndices[0]).join('\n')).filter(isURLPattern);
     urls.push(urls_);
 }
 
@@ -96,9 +109,9 @@ function extractURLsFromSiteFixesConfig(text: string): {urls: string[][]; offset
 
     let recordStart = 0;
     // Delimiter between two blocks
-    const delimiterRegex = /^\s*={2,}\s*$/gm;
     let delimiter: RegExpMatchArray | null;
-    while ((delimiter = delimiterRegex.exec(text))) {
+    BLOCK_DELIMITER_REGEX.lastIndex = 0;
+    while ((delimiter = BLOCK_DELIMITER_REGEX.exec(text))) {
         const nextDelimiterStart = delimiter.index!;
         const nextDelimiterEnd = delimiter.index! + delimiter[0].length;
         processSiteFixesConfigBlock(text, offsets, recordStart, nextDelimiterStart, urls);
