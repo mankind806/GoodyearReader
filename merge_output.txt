@@ -1,0 +1,8 @@
+==================================
+Merging refactor-app-switch-ids-6656558788840289173...
+Fehler: Mergen ist nicht möglich, weil Sie nicht zusammengeführte Dateien haben.
+Hinweis: Korrigieren Sie dies im Arbeitsverzeichnis, und benutzen Sie
+Hinweis: dann 'git add/rm <Datei>', um die Auflösung entsprechend zu markieren
+Hinweis: und zu committen.
+Schwerwiegend: Beende wegen unaufgelöstem Konflikt.
+Conflict detected in refactor-app-switch-ids-6656558788840289173!

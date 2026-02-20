@@ -1,0 +1,26 @@
+Auf Branch main
+Ihr Branch ist 6 Commits vor 'origin/main'.
+  (benutzen Sie "git push", um lokale Commits zu publizieren)
+
+Sie haben nicht zusammengeführte Pfade.
+  (beheben Sie die Konflikte und führen Sie "git commit" aus)
+  (benutzen Sie "git merge --abort", um den Merge abzubrechen)
+
+Zum Commit vorgemerkte Änderungen:
+	neue Datei:     tests/unit/ui/controls/multi-switch.tests.tsx
+
+Nicht zusammengeführte Pfade:
+  (benutzen Sie "git add/rm <Datei>...", um die Auflösung zu markieren)
+	von beiden geändert:    src/ui/controls/multi-switch/index.tsx
+	von beiden geändert:    src/ui/popup/main-page/app-switch.tsx
+	von beiden geändert:    tests/unit/jest.config.mjs
+	von beiden geändert:    tests/unit/tsconfig.json
+
+Unversionierte Dateien:
+  (benutzen Sie "git add <Datei>...", um die Änderungen zum Commit vorzumerken)
+	branches_to_merge.txt
+	git_status.txt
+	merge_all.sh
+	merge_output.txt
+	test.txt
+
