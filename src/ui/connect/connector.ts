@@ -2,13 +2,6 @@ import type {ExtensionData, ExtensionActions, Theme, UserSettings, DevToolsData,
 import {MessageTypeBGtoUI, MessageTypeUItoBG} from '../../utils/message';
 import {isFirefox} from '../../utils/platform';
 
-declare const browser: {
-    commands: {
-        update({name, shortcut}: chrome.commands.Command): Promise<void>;
-        getAll(): Promise<chrome.commands.Command[]>;
-    };
-};
-
 export default class Connector implements ExtensionActions {
     private changeSubscribers: Set<(data: ExtensionData) => void>;
 

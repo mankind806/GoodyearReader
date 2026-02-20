@@ -12,7 +12,8 @@
             "chrome",
             "node",
             "jest",
-            "jest-extended"
+            "jest-extended",
+            "firefox-webext-browser"
         ],
         "esModuleInterop": true,
         "skipLibCheck": true,

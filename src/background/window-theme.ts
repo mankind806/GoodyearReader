@@ -3,14 +3,6 @@ import {modifyBackgroundColor, modifyForegroundColor, modifyBorderColor} from '.
 import type {RGBA} from '../utils/color';
 import {parseColorWithCache} from '../utils/color';
 
-// TODO: remove type after dependency update
-declare const browser: {
-    theme: {
-        update: ((theme: any) => Promise<void>);
-        reset: (() => Promise<void>);
-    };
-};
-
 const themeColorTypes: { [key: string]: 'bg' | 'text' | 'border' } = {
     accentcolor: 'bg',
     button_background_active: 'text',
