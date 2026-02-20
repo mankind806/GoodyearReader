@@ -60,13 +60,11 @@ export function evalMath(expression: string): number {
     for (let i = 0, len = rpnStack.length; i < len; i++) {
         const op = operators.get(rpnStack[i]);
         if (op) {
-            // Get the arguments of for the operation(first two in the stack).
-            const args = stack.splice(0, 2);
-            // Excute it, because of reverse notation we first pass second item then the first item.
-            stack.push(op.exec(args[1], args[0]));
+            const right = stack.pop()!;
+            const left = stack.pop()!;
+            stack.push(op.exec(left, right));
         } else {
-            // Add the number to the stack.
-            stack.unshift(parseFloat(rpnStack[i]));
+            stack.push(parseFloat(rpnStack[i]));
         }
     }
 
