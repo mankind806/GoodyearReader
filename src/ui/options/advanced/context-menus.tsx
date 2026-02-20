@@ -1,10 +1,13 @@
 import {m} from 'malevic';
+import {withState, useState} from 'malevic/state';
 
 import type {ViewProps} from '../../../definitions';
 import {isFirefox, isMobile} from '../../../utils/platform';
 import {CheckButton} from '../../controls';
 
-export function ContextMenus(props: ViewProps): Malevic.Child {
+function ContextMenusImpl(props: ViewProps): Malevic.Child {
+    const {setState} = useState({});
+
     function onContextMenusChange(checked: boolean) {
         if (checked) {
             if (isFirefox) {
@@ -19,8 +22,8 @@ export function ContextMenus(props: ViewProps): Malevic.Child {
                 } else {
                     // This branch is never actually taken.
                     // Permission request was declined, we can not use context menus
-                    // TODO: toggle back off
                     console.warn('User declined contextMenus permission prompt.');
+                    setState({});
                 }
             });
         } else {
@@ -39,3 +42,5 @@ export function ContextMenus(props: ViewProps): Malevic.Child {
         />
     );
 }
+
+export const ContextMenus = withState(ContextMenusImpl);
