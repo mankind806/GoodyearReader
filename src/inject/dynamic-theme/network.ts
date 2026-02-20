@@ -44,7 +44,7 @@ chrome.runtime.onMessage.addListener(({type, data, error, id}: MessageBGtoCS) =>
     }
 });
 
-const ipV4RegExp = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/;
+const ipV4RegExp = /^(\d+|0x[0-9a-fA-F]+)(\.(\d+|0x[0-9a-fA-F]+)){0,3}$/;
 const MAX_CORS_HOSTS = 16;
 const corsHosts = new Set<string>();
 const checkedHosts = new Set<string>();
@@ -102,7 +102,8 @@ function shouldIgnoreCors(url: URL) {
         localAliases.includes(hostname) ||
         localSubDomains.some((sub) => hostname.endsWith(sub)) ||
         hostname.startsWith('[') ||
-        hostname.match(ipV4RegExp)
+        hostname.match(ipV4RegExp) ||
+        !hostname.includes('.')
     ) {
         return true;
     }
