@@ -156,13 +156,16 @@ export function watchForNodePosition<T extends Node>(
         }
     });
     const run = () => {
-        // TODO: remove type cast after dependency update
-        observer.observe(parent!, {childList: true});
+        if (parent) {
+            observer.observe(parent, {childList: true});
+        }
     };
 
     const stop = () => {
-        // TODO: remove type cast after dependency update
-        clearTimeout(timeoutId!);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
         observer.disconnect();
         restore.cancel();
     };
