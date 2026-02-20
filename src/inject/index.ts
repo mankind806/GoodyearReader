@@ -264,7 +264,6 @@ if (__TEST__) {
         }));
     };
 
-    // TODO(anton): remove this once Firefox supports tab.eval() via WebDriver BiDi
     if (__FIREFOX_MV2__) {
         function expectPageStyles(data: any) {
             const checkOne = (expectation: any) => {
@@ -311,15 +310,6 @@ if (__TEST__) {
 
             const {id, data, type} = JSON.parse(e.data);
             switch (type) {
-                case 'firefox-eval': {
-                    const result = eval(data);
-                    if (result instanceof Promise) {
-                        result.then(respond);
-                    } else {
-                        respond(result);
-                    }
-                    break;
-                }
                 case 'firefox-expectPageStyles': {
                     // Styles may not have been applied to the document yet,
                     // so we check once immediately and then on an interval.

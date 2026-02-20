@@ -295,12 +295,6 @@ export default class CustomJestEnvironment extends TestEnvironment {
         };
 
         global.pageUtils.evaluateScript = async (script) => {
-            if (global.product === 'firefox') {
-                if (typeof script !== 'function') {
-                    throw new Error('Not implemented');
-                }
-                return await global.pageUtils.evaluate(`(${script.toString()})()`);
-            }
             return await page.evaluate(script);
         };
 
@@ -489,7 +483,6 @@ export default class CustomJestEnvironment extends TestEnvironment {
             };
 
             this.global.pageUtils = {
-                evaluate: async (script) => await sendToPage('firefox-eval', script),
                 expectPageStyles: async (expectations) => await sendToPage('firefox-expectPageStyles', expectations),
                 emulateColorScheme: async (colorScheme) => await sendToPage('firefox-emulateColorScheme', colorScheme),
                 getColorScheme: async () => {
