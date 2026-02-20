@@ -67,7 +67,9 @@ export function isRelativeHrefOnAbsolutePath(href: string): boolean {
     }
     // Now check if the path is on the same path as the base
     // We do this by getting the pathname up until the last slash.
-    return url.pathname === location.pathname;
+    const urlDir = url.pathname.substring(0, url.pathname.lastIndexOf('/') + 1);
+    const locDir = location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
+    return urlDir === locDir;
 }
 
 export function getURLHostOrProtocol($url: string): string {
