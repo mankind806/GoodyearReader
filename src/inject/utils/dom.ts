@@ -82,10 +82,10 @@ export function watchForNodePosition<T extends Node>(
     const RETRY_TIMEOUT = getDuration({seconds: 2});
     const ATTEMPTS_INTERVAL = getDuration({seconds: 10});
     let prevSibling = node.previousSibling;
-    let parent = node.parentNode;
-    if (!parent) {
+    if (!node.parentNode) {
         throw new Error('Unable to watch for node position: parent element not found');
     }
+    let parent: Node & ParentNode = node.parentNode;
     if (mode === 'prev-sibling' && !prevSibling) {
         throw new Error('Unable to watch for node position: there is no previous sibling');
     }
@@ -137,8 +137,8 @@ export function watchForNodePosition<T extends Node>(
         // If parent becomes disconnected from the DOM, fetches the new head and
         // save that as parent. Do this only for the head mode, as those are
         // important nodes to keep.
-        if (mode === 'head' && !parent!.isConnected) {
-            parent = document.head;
+        if (mode === 'head' && !parent.isConnected) {
+            parent = document.head!;
             // TODO: Set correct prevSibling, which needs to be the last `.darkreader` in <head> that isn't .darkeader--sync or .darkreader--cors.
         }
 
@@ -156,13 +156,14 @@ export function watchForNodePosition<T extends Node>(
         }
     });
     const run = () => {
-        // TODO: remove type cast after dependency update
-        observer.observe(parent!, {childList: true});
+        observer.observe(parent, {childList: true});
     };
 
     const stop = () => {
-        // TODO: remove type cast after dependency update
-        clearTimeout(timeoutId!);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
         observer.disconnect();
         restore.cancel();
     };
@@ -171,7 +172,7 @@ export function watchForNodePosition<T extends Node>(
         observer.takeRecords();
     };
 
-    const updateParent = (parentNode: Node & ParentNode | null) => {
+    const updateParent = (parentNode: Node & ParentNode) => {
         parent = parentNode;
         stop();
         run();
