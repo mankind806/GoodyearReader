@@ -495,7 +495,9 @@ export function getBgImageModifier(
                         }
                         if (awaitingForImageLoading.has(url)) {
                             const awaiters = awaitingForImageLoading.get(url)!;
-                            imageDetails = await new Promise<ImageDetails | null>((resolve) => awaiters.push(resolve));
+                            imageDetails = await new Promise<ImageDetails | null>((resolve: any): void => {
+                                awaiters.push(resolve);
+                            });
                             if (!imageDetails) {
                                 return null;
                             }
