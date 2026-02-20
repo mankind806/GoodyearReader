@@ -230,7 +230,6 @@ const C_MINUS = '-'.charCodeAt(0);
 const C_SPACE = ' '.charCodeAt(0);
 const C_COMMA = ','.charCodeAt(0);
 const C_SLASH = '/'.charCodeAt(0);
-const C_PERCENT = '%'.charCodeAt(0);
 
 function getNumbersFromString(input: string, range: number[], units: {[unit: string]: number}) {
     const numbers: number[] = [];
@@ -285,81 +284,75 @@ const rgbRange = [255, 255, 255, 1];
 const rgbUnits = {'%': 100};
 
 export function getRGBValues(input: string): number[] | null {
-    const CHAR_CODE_0 = 48;
-    const length = input.length;
-    let i = 0;
-    let digitsCount = 0;
-    let digitSequence = false;
-    let floatDigitsCount = -1;
-    let delimiter = C_SPACE;
-    let channel = -1;
-    let result: number[] | null = null;
-    while (i < length) {
-        const c = input.charCodeAt(i);
-        if ((c >= C_0 && c <= C_9) || c === C_DOT) {
-            if (!digitSequence) {
-                digitSequence = true;
-                digitsCount = 0;
-                floatDigitsCount = -1;
-                channel++;
-                if (channel === 3 && result) {
-                    result[3] = 0;
-                }
-                if (channel > 3) {
-                    return null;
-                }
-            }
-            if (c === C_DOT) {
-                if (floatDigitsCount > 0) {
-                    return null;
-                }
-                floatDigitsCount = 0;
-            } else {
-                const d = c - CHAR_CODE_0;
-                if (!result) {
-                    result = [0, 0, 0, 1];
-                }
-                if (floatDigitsCount > -1) {
-                    floatDigitsCount++;
-                    result[channel] += d / (10 ** floatDigitsCount);
-                } else {
-                    digitsCount++;
-                    if (digitsCount > 3) {
-                        return null;
-                    }
-                    result[channel] = result[channel] * 10 + d;
-                }
-            }
-        } else if (c === C_PERCENT) {
-            if (channel < 0 || channel > 3 || delimiter !== C_SPACE || !result) {
+    const result: number[] = [0, 0, 0, 1];
+    let channel = 0;
+    let delimiter: ',' | ' ' = ' ';
+    let expectingNewNumber = true;
+    let hasPercent = false;
+
+    input = input.trim();
+    const regex = /([+-]?(?:\d*\.?\d+)(?:[eE][+-]?\d+)?%?)|([, /]+)/g;
+    let match: RegExpExecArray | null;
+    let lastIndex = 0;
+
+    while ((match = regex.exec(input)) !== null) {
+        if (match.index !== lastIndex) {
+            return null;
+        }
+        lastIndex = regex.lastIndex;
+
+        const numStr = match[1];
+        const delimStr = match[2];
+
+        if (numStr) {
+            if (!expectingNewNumber && !hasPercent) {
                 return null;
             }
-            result[channel] = channel < 3 ? Math.round(result[channel] * 255 / 100) : (result[channel] / 100);
-            digitSequence = false;
-        } else {
-            digitSequence = false;
-            if (c === C_SPACE) {
+            if (channel > 3) {
+                return null;
+            }
+            let value = parseFloat(numStr);
+            hasPercent = numStr.includes('%');
+            if (hasPercent) {
+                if (delimiter !== ' ') {
+                    return null;
+                }
+                value /= 100;
+                if (channel < 3) {
+                    value = Math.round(value * 255);
+                }
+            }
+            result[channel] = value;
+            channel++;
+            expectingNewNumber = false;
+        } else if (delimStr) {
+            expectingNewNumber = true;
+            if (delimStr.includes('/')) {
+                if (channel !== 3 || delimiter !== ' ') {
+                    return null;
+                }
+                if (delimStr.includes(',') || (delimStr.match(/\//g) || []).length > 1) {
+                    return null;
+                }
+            } else if (delimStr.includes(',')) {
                 if (channel === 0) {
-                    delimiter = c;
-                }
-            } else if (c === C_COMMA) {
-                if (channel === -1) {
                     return null;
                 }
-                delimiter = C_COMMA;
-            } else if (c === C_SLASH) {
-                if (channel !== 2 || delimiter !== C_SPACE) {
-                    return null;
-                }
-            } else {
-                return null;
+                delimiter = ',';
+            } else if (delimiter !== ',') {
+                delimiter = ' ';
             }
         }
-        i++;
     }
-    if (channel < 2 || channel > 3) {
+
+    if (lastIndex !== input.length) {
         return null;
     }
+
+    if (channel < 3 || channel > 4) {
+        return null;
+    }
+
     return result;
 }
 

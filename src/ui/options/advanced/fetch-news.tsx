@@ -13,8 +13,8 @@ export function FetchNews(props: ViewProps): Malevic.Child {
             checked={props.data.settings.fetchNews}
             label="Notify of news"
             description={props.data.settings.fetchNews ?
-                "Notifying of news" :
-                "Not Notifying of news"}
+                'Notifying of news' :
+                'Not Notifying of news'}
             onChange={onFetchNewsChange}
         />
     );
