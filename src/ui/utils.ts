@@ -1,4 +1,4 @@
-import {isMobile} from '../utils/platform';
+import {isMobile, isFirefox} from '../utils/platform';
 
 declare const __CHROMIUM_MV3__: boolean;
 
@@ -124,15 +124,20 @@ export function createSwipeHandler(startHandler: StartSwipeHandler): (e: MouseEv
 export async function getFontList(): Promise<string[]> {
     return new Promise<string[]>((resolve) => {
         if (!chrome.fontSettings) {
-            // Todo: Remove it as soon as Firefox and Edge get support.
-            resolve([
-                'serif',
-                'sans-serif',
-                'monospace',
-                'cursive',
-                'fantasy',
-                'system-ui',
-            ]);
+            // Firefox does not support chrome.fontSettings.
+            // We keep the fallback list for Firefox.
+            if (isFirefox) {
+                resolve([
+                    'serif',
+                    'sans-serif',
+                    'monospace',
+                    'cursive',
+                    'fantasy',
+                    'system-ui',
+                ]);
+            } else {
+                resolve([]);
+            }
             return;
         }
         chrome.fontSettings.getFontList((list) => {
