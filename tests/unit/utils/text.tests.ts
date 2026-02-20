@@ -1,5 +1,5 @@
 import {formatCSS} from '../../../src/utils/css-text/format-css';
-import {getParenthesesRange} from '../../../src/utils/text';
+import {getParenthesesRange, splitExcluding, TextRange} from '../../../src/utils/text';
 
 test('CSS formatting', () => {
     expect(formatCSS('div { color: red; }'))
@@ -109,4 +109,18 @@ test('Parenthesis Range', () => {
     expect(getParenthesesRange('rgb(0, var(--x, var(--y)), 0)')).toEqual({start: 3, end: 29});
     expect(getParenthesesRange('rgb(0, var(--x, var(--y)), 0)', 4)).toEqual({start: 10, end: 25});
     expect(getParenthesesRange('rgb(0, var(--x, var(--y)), 0), rgb(0, 0, 0)')).toEqual({start: 3, end: 29});
+});
+
+test('Split Excluding', () => {
+    expect(splitExcluding('a,b,c', ',', [])).toEqual(['a', 'b', 'c']);
+    expect(splitExcluding('a, (b,c), d', ',', [{start: 3, end: 8}])).toEqual(['a', '(b,c)', 'd']);
+    expect(splitExcluding('func(a,b), [c,d], {e,f}', ',', [
+        {start: 4, end: 9},
+        {start: 11, end: 16},
+        {start: 18, end: 23},
+    ])).toEqual(['func(a,b)', '[c,d]', '{e,f}']);
+    expect(splitExcluding('abc', ',', [])).toEqual(['abc']);
+    expect(splitExcluding('', ',', [])).toEqual(['']);
+    expect(splitExcluding(',a,b,', ',', [])).toEqual(['', 'a', 'b', '']);
+    expect(splitExcluding(' a , b , c ', ',', [])).toEqual(['a', 'b', 'c']);
 });
