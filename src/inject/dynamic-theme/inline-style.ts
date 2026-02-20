@@ -8,6 +8,7 @@ import {iterateShadowHosts, createOptimizedTreeObserver, isReadyStateComplete, a
 
 import {iterateCSSDeclarations} from './css-rules';
 import {getImageDetails} from './image';
+import type {CSSValueModifierWithSubscription} from './modify-css';
 import {getModifiableCSSDeclaration} from './modify-css';
 import type {CSSVariableModifier, ModifiedVarDeclaration} from './variables';
 import {variablesStore} from './variables';
@@ -409,6 +410,18 @@ export function overrideInlineStyle(element: HTMLElement, theme: Theme, ignoreIn
             mod.onTypeChange.addListener(setProps);
         }
 
+        function setVarValueWithSubscription(mod: CSSValueModifierWithSubscription) {
+            const updateValue = (value: string | Promise<string | null>) => {
+                if (typeof value === 'string') {
+                    setStaticValue(value);
+                } else if (value instanceof Promise) {
+                    setAsyncValue(value, cssVal);
+                }
+            };
+            updateValue(mod.value);
+            mod.onTypeChange.addListener(updateValue);
+        }
+
         function setAsyncValue(promise: Promise<string | null>, sourceValue: string) {
             promise.then((value) => {
                 if (value && targetCSSProp === 'background' && value.startsWith('var(--darkreader-bg--')) {
@@ -434,8 +447,12 @@ export function overrideInlineStyle(element: HTMLElement, theme: Theme, ignoreIn
             inlineStringValueCache.get(modifierCSSProp)!.set(cssVal, value);
         } else if (value instanceof Promise) {
             setAsyncValue(value, cssVal);
-        } else if (typeof value === 'object') {
-            setVarDeclaration(value);
+        } else if (typeof value === 'object' && value !== null) {
+            if ('declarations' in value) {
+                setVarDeclaration(value as ReturnType<CSSVariableModifier>);
+            } else if ('value' in value) {
+                setVarValueWithSubscription(value as CSSValueModifierWithSubscription);
+            }
         }
     }
 

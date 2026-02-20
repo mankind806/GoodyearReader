@@ -19,7 +19,15 @@ import type {CSSVariableModifier, VariablesStore} from './variables';
 
 declare const __CHROMIUM_MV3__: boolean;
 
-export type CSSValueModifier = (theme: Theme) => string | Promise<string | null>;
+export interface CSSValueModifierWithSubscription {
+    value: string | Promise<string | null>;
+    onTypeChange: {
+        addListener: (callback: (value: string | Promise<string | null>) => void) => void;
+        removeListeners: () => void;
+    };
+}
+
+export type CSSValueModifier = (theme: Theme) => string | Promise<string | null> | CSSValueModifierWithSubscription;
 
 export interface CSSValueModifierResult {
     result: string;
@@ -539,7 +547,7 @@ export function getBgImageModifier(
             };
         };
 
-        const getBgImageValue = (imageDetails: ImageDetails, theme: Theme) => {
+        const getBgImageValue = (imageDetails: ImageDetails, theme: Theme): string | null => {
             // Goodyear Theme: Pragmatic Mode. Do not modify images.
             return null;
         };
