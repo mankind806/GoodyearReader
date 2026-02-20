@@ -1,6 +1,67 @@
-import {indexURLTemplateList, isPDF, isURLInIndexedList, isURLMatched} from '../../../src/utils/url';
+import {getAbsoluteURL, indexURLTemplateList, isPDF, isURLInIndexedList, isURLMatched} from '../../../src/utils/url';
 
 describe('Domain utilities', () => {
+    let originalDocument: any;
+    let originalLocation: any;
+
+    beforeAll(() => {
+        originalDocument = global.document;
+        originalLocation = global.location;
+
+        if (!global.document) {
+            global.document = {
+                createElement: (tagName: string) => {
+                    const el: any = {
+                        href: '',
+                    };
+                    if (tagName === 'a') {
+                        Object.defineProperty(el, 'href', {
+                            set(url: string) {
+                                try {
+                                    this._href = new URL(url).href;
+                                } catch (e) {
+                                    this._href = url;
+                                }
+                            },
+                            get() {
+                                return this._href;
+                            },
+                        });
+                        return el;
+                    }
+                    throw new Error(`Mock document.createElement(${tagName}) not implemented`);
+                },
+            } as any;
+        }
+        if (!global.location) {
+            global.location = {
+                protocol: 'http:',
+            } as any;
+        }
+    });
+
+    afterAll(() => {
+        if (originalDocument) {
+            global.document = originalDocument;
+        } else {
+            delete (global as any).document;
+        }
+        if (originalLocation) {
+            global.location = originalLocation;
+        } else {
+            delete (global as any).location;
+        }
+    });
+
+    test('getAbsoluteURL', () => {
+        expect(getAbsoluteURL('https://base.com/path/', 'file.png')).toBe('https://base.com/path/file.png');
+        expect(getAbsoluteURL('https://base.com/path/sub/', '../file.png')).toBe('https://base.com/path/file.png');
+        expect(getAbsoluteURL('https://base.com/path/', '/root.png')).toBe('https://base.com/root.png');
+        // Protocol-relative URLs are resolved using location.protocol, not the base URL protocol.
+        expect(getAbsoluteURL('https://base.com/', '//cdn.com/script.js')).toBe('http://cdn.com/script.js');
+        expect(getAbsoluteURL('https://base.com/', 'data:image/png;base64,...')).toBe('data:image/png;base64,...');
+    });
+
     test('URL match', () => {
         expect(isURLMatched('https://www.example.com/', '*')).toEqual(true);
         expect(isURLMatched('https://www.example.com/', '*.*')).toEqual(true);
