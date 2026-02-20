@@ -4,7 +4,6 @@ enum CSP {
 }
 
 export function prepareCSPMV3(): chrome.runtime.ManifestV3['content_security_policy'] {
-
     const result: any = {};
     const policy: any = {
         extension_pages: {
