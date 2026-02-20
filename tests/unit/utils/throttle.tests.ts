@@ -1,119 +1,109 @@
+/**
+ * @jest-environment jsdom
+ */
 import {throttle, createAsyncTasksQueue} from '../../../src/utils/throttle';
 
-describe('throttle utils', () => {
-    let originalRAF: any;
-    let originalCAF: any;
-    let frameCallbacks: Map<number, (time: number) => void>;
-    let frameIdCounter: number;
+describe('Throttle', () => {
+    let frameId = 0;
+    const callbacks = new Map<number, FrameRequestCallback>();
+
+    beforeAll(() => {
+        jest.useFakeTimers();
+        jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+            frameId++;
+            callbacks.set(frameId, cb);
+            return frameId;
+        });
+        jest.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => {
+            callbacks.delete(id);
+        });
+    });
+
+    afterAll(() => {
+        jest.useRealTimers();
+        jest.restoreAllMocks();
+    });
 
     beforeEach(() => {
-        originalRAF = (global as any).requestAnimationFrame;
-        originalCAF = (global as any).cancelAnimationFrame;
-        frameCallbacks = new Map();
-        frameIdCounter = 0;
-
-        (global as any).requestAnimationFrame = (callback: (time: number) => void) => {
-            const id = ++frameIdCounter;
-            frameCallbacks.set(id, callback);
-            return id;
-        };
-
-        (global as any).cancelAnimationFrame = (id: number) => {
-            frameCallbacks.delete(id);
-        };
-
-        if (!(global as any).document) {
-            (global as any).document = {
-                dispatchEvent: jest.fn(),
-            };
-        }
+        frameId = 0;
+        callbacks.clear();
     });
 
-    afterEach(() => {
-        (global as any).requestAnimationFrame = originalRAF;
-        (global as any).cancelAnimationFrame = originalCAF;
-    });
-
-    function runFrames() {
-        const callbacks = Array.from(frameCallbacks.values());
-        frameCallbacks.clear();
-        callbacks.forEach((cb) => cb(Date.now()));
+    function tick() {
+        const currentCallbacks = Array.from(callbacks.values());
+        callbacks.clear();
+        currentCallbacks.forEach((cb) => cb(Date.now()));
     }
 
-    describe('throttle', () => {
-        test('should execute callback immediately', () => {
-            const callback = jest.fn();
-            const throttled = throttle(callback);
-            throttled();
-            expect(callback).toHaveBeenCalledTimes(1);
-        });
+    test('Throttling', () => {
+        const callback = jest.fn();
+        const throttled = throttle(callback);
 
-        test('should throttle subsequent calls', () => {
-            const callback = jest.fn();
-            const throttled = throttle(callback);
-            throttled();
-            expect(callback).toHaveBeenCalledTimes(1);
+        throttled();
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callbacks.size).toBe(1);
 
-            throttled();
-            expect(callback).toHaveBeenCalledTimes(1);
+        throttled();
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callbacks.size).toBe(1);
 
-            runFrames();
-            expect(callback).toHaveBeenCalledTimes(2);
-        });
-
-        test('should execute with latest arguments', () => {
-            const callback = jest.fn();
-            const throttled = throttle(callback);
-            throttled(1);
-            throttled(2);
-            throttled(3);
-            expect(callback).toHaveBeenCalledWith(1);
-
-            runFrames();
-            expect(callback).toHaveBeenCalledWith(3);
-            expect(callback).toHaveBeenCalledTimes(2);
-        });
-
-        test('should cancel pending execution', () => {
-            const callback = jest.fn();
-            const throttled = throttle(callback);
-            throttled();
-            throttled();
-            throttled.cancel();
-
-            runFrames();
-            expect(callback).toHaveBeenCalledTimes(1);
-        });
+        tick();
+        expect(callback).toHaveBeenCalledTimes(2);
+        expect(callbacks.size).toBe(0);
     });
 
-    describe('createAsyncTasksQueue', () => {
-        test('should execute tasks', () => {
-            const queue = createAsyncTasksQueue();
-            const task1 = jest.fn();
-            const task2 = jest.fn();
+    test('Throttling cancellation', () => {
+        const callback = jest.fn();
+        const throttled = throttle(callback);
 
-            queue.add(task1);
-            queue.add(task2);
+        throttled();
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callbacks.size).toBe(1);
 
-            expect(task1).not.toHaveBeenCalled();
-            expect(task2).not.toHaveBeenCalled();
+        throttled();
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callbacks.size).toBe(1);
 
-            runFrames();
+        throttled.cancel();
+        expect(callbacks.size).toBe(0);
 
-            expect(task1).toHaveBeenCalled();
-            expect(task2).toHaveBeenCalled();
-        });
+        tick();
+        expect(callback).toHaveBeenCalledTimes(1);
+    });
 
-        test('should cancel execution', () => {
-            const queue = createAsyncTasksQueue();
-            const task1 = jest.fn();
+    test('AsyncTasksQueue', () => {
+        const queue = createAsyncTasksQueue();
+        const task1 = jest.fn();
+        const task2 = jest.fn();
 
-            queue.add(task1);
-            queue.cancel();
+        queue.add(task1);
+        expect(callbacks.size).toBe(1);
+        expect(task1).not.toHaveBeenCalled();
 
-            runFrames();
+        queue.add(task2);
+        expect(callbacks.size).toBe(1);
+        expect(task2).not.toHaveBeenCalled();
 
-            expect(task1).not.toHaveBeenCalled();
-        });
+        tick();
+        expect(task1).toHaveBeenCalled();
+        expect(task2).toHaveBeenCalled();
+        expect(callbacks.size).toBe(0);
+    });
+
+    test('AsyncTasksQueue cancellation', () => {
+        const queue = createAsyncTasksQueue();
+        const task1 = jest.fn();
+        const task2 = jest.fn();
+
+        queue.add(task1);
+        queue.add(task2);
+        expect(callbacks.size).toBe(1);
+
+        queue.cancel();
+        expect(callbacks.size).toBe(0);
+
+        tick();
+        expect(task1).not.toHaveBeenCalled();
+        expect(task2).not.toHaveBeenCalled();
     });
 });

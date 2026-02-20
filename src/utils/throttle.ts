@@ -20,7 +20,7 @@ export function throttle<T extends(...args: any[]) => any>(callback: T): T & {ca
     }) as any;
 
     const cancel = () => {
-        if (frameId) {
+        if (frameId !== null) {
             cancelAnimationFrame(frameId);
         }
         pending = false;
@@ -63,7 +63,7 @@ export function createAsyncTasksQueue(): AsyncTaskQueue {
 
     function cancel() {
         tasks.splice(0);
-        if (frameId) {
+        if (frameId !== null) {
             cancelAnimationFrame(frameId);
         }
         frameId = null;
