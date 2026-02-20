@@ -91,7 +91,7 @@ export function watchForNodePosition<T extends Node>(
     }
     let attempts = 0;
     let start: number | null = null;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const restore = throttle(() => {
         if (timeoutId) {
             return;
@@ -106,7 +106,7 @@ export function watchForNodePosition<T extends Node>(
                 timeoutId = setTimeout(() => {
                     start = null;
                     attempts = 0;
-                    timeoutId = null;
+                    timeoutId = undefined;
                     restore();
                 }, RETRY_TIMEOUT);
                 return;
@@ -161,8 +161,7 @@ export function watchForNodePosition<T extends Node>(
     };
 
     const stop = () => {
-        // TODO: remove type cast after dependency update
-        clearTimeout(timeoutId!);
+        clearTimeout(timeoutId);
         observer.disconnect();
         restore.cancel();
     };
