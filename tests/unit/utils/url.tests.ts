@@ -1,6 +1,21 @@
-import {indexURLTemplateList, isPDF, isURLInIndexedList, isURLMatched} from '../../../src/utils/url';
+import {indexURLTemplateList, isPDF, isURLInIndexedList, isURLInList, isURLMatched} from '../../../src/utils/url';
 
 describe('Domain utilities', () => {
+    test('URL in list', () => {
+        expect(isURLInList('https://google.com/', ['google.com'])).toEqual(true);
+        expect(isURLInList('https://google.com/', ['google.com', 'youtube.com'])).toEqual(true);
+        expect(isURLInList('https://google.com/', ['youtube.com', 'google.com'])).toEqual(true);
+        expect(isURLInList('https://google.com/', ['google.*'])).toEqual(true);
+        expect(isURLInList('https://www.google.com/', ['google.*'])).toEqual(true);
+        expect(isURLInList('https://www.google.com/', ['*.google.com'])).toEqual(true);
+        expect(isURLInList('https://google.com/', ['youtube.com'])).toEqual(false);
+        expect(isURLInList('https://google.com/', [])).toEqual(false);
+        expect(isURLInList('https://google.com/', ['^google.com'])).toEqual(true);
+        expect(isURLInList('https://www.google.com/', ['^google.com'])).toEqual(false);
+        expect(isURLInList('https://www.google.com/', ['/google\\.com/'])).toEqual(true);
+        expect(isURLInList('https://www.google.com/', ['/google\\.org/'])).toEqual(false);
+    });
+
     test('URL match', () => {
         expect(isURLMatched('https://www.example.com/', '*')).toEqual(true);
         expect(isURLMatched('https://www.example.com/', '*.*')).toEqual(true);
