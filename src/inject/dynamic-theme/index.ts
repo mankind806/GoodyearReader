@@ -647,8 +647,10 @@ function tryInvertChromePDF() {
 /**
  * TODO: expose this function to API builds via src/api function enable()
  */
-export function createOrUpdateDynamicTheme(theme: Theme, dynamicThemeFixes: DynamicThemeFix[], iframe: boolean): void {
-    const dynamicThemeFix = selectRelevantFix(document.location.href, dynamicThemeFixes);
+export function createOrUpdateDynamicTheme(theme: Theme, dynamicThemeFixes: DynamicThemeFix[] | DynamicThemeFix | null, iframe: boolean): void {
+    const dynamicThemeFix = Array.isArray(dynamicThemeFixes)
+        ? selectRelevantFix(document.location.href, dynamicThemeFixes)
+        : dynamicThemeFixes;
 
     // Most websites will have only the generic fix applied ('*'), some will have generic fix and one site-specific fix (two in total),
     // and very few will have multiple site-specific fixes
@@ -660,12 +662,7 @@ export function createOrUpdateDynamicTheme(theme: Theme, dynamicThemeFixes: Dyna
 let prevTheme: Theme | null = null;
 let prevFixes: DynamicThemeFix | null = null;
 
-/**
- * Note: This function should be directly used only in API builds, it is exported by this fle
- * only for use in src/api/enable() for backwards compatibility,
- * extension should use only createOrUpdateDynamicTheme()
- */
-export function createOrUpdateDynamicThemeInternal(themeConfig: Theme, dynamicThemeFixes: DynamicThemeFix | null, iframe: boolean): void {
+function createOrUpdateDynamicThemeInternal(themeConfig: Theme, dynamicThemeFixes: DynamicThemeFix | null, iframe: boolean): void {
     theme = themeConfig;
     fixes = dynamicThemeFixes;
 
