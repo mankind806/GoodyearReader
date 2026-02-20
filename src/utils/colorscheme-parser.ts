@@ -134,8 +134,7 @@ export function parseColorSchemeConfig(config: string): { result: ParsedColorSch
             }
 
             // Check if the variant is valid.
-            // if isSecondVariant is true, then we will check if the variant is 'Light', 'Dark' is not considered valid.
-            if (variant !== 'LIGHT' && variant !== 'DARK' && (isSecondVariant && variant === 'Light')) {
+            if (variant !== 'LIGHT' && variant !== 'DARK') {
                 throwError(`The ${humanizeNumber(lineIndex)} line of the color scheme "${name}" is not a valid variant.`);
                 return;
             }
@@ -185,24 +184,22 @@ export function parseColorSchemeConfig(config: string): { result: ParsedColorSch
             };
         };
 
-        const firstVariant = checkVariant(2, false)!;
-        const isFirstVariantLight = firstVariant.variant === 'LIGHT';
-        delete firstVariant.variant;
-        // If the interrupt variable is set, we should stop parsing.
-        if (interrupt) {
+        const firstVariant = checkVariant(2, false);
+        if (interrupt || !firstVariant) {
             return;
         }
-        let secondVariant: typeof firstVariant | null = null;
+        const isFirstVariantLight = firstVariant.variant === 'LIGHT';
+        delete firstVariant.variant;
+        let secondVariant: ReturnType<typeof checkVariant> | null = null;
         let isSecondVariantLight = false;
         // Check if the 7th line is defined otherwise we should stop parsing.
         if (lines[6]) {
-            secondVariant = checkVariant(6, true)!;
-            isSecondVariantLight = secondVariant.variant === 'LIGHT';
-            delete secondVariant.variant;
-            // If the interrupt variable is set, we should stop parsing.
-            if (interrupt) {
+            secondVariant = checkVariant(6, true);
+            if (interrupt || !secondVariant) {
                 return;
             }
+            isSecondVariantLight = secondVariant.variant === 'LIGHT';
+            delete secondVariant.variant;
             // Must end with 1 new line(two Variants).
             if (lines.length > 11 || lines[9] || lines[10]) {
                 throwError(`The color scheme "${name}" doesn't end with 1 new line.`);
