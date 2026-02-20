@@ -1,4 +1,4 @@
-import type {MessageBGtoCS} from '../definitions';
+import type {MessageBGtoCS, MessageCStoBG} from '../definitions';
 import {MessageTypeCStoBG, MessageTypeBGtoCS} from '../utils/message';
 import {readResponseAsDataURL} from '../utils/network';
 
@@ -13,11 +13,18 @@ if (!chrome.runtime) {
 
 const messageListeners = new Set<(message: MessageBGtoCS) => void>();
 
-async function sendMessage(...args: any[]) {
-    if (args[0] && args[0].type === MessageTypeCStoBG.FETCH) {
-        const {id} = args[0];
+interface FetchRequestData {
+    url: string;
+    responseType: 'data-url' | 'text';
+}
+
+async function sendMessage(...args: unknown[]) {
+    const arg0 = args[0];
+    if (arg0 && typeof arg0 === 'object' && 'type' in arg0 && (arg0 as MessageCStoBG).type === MessageTypeCStoBG.FETCH) {
+        const message = arg0 as MessageCStoBG;
+        const {id} = message;
         try {
-            const {url, responseType} = args[0].data;
+            const {url, responseType} = message.data as FetchRequestData;
             const response = await callFetchMethod(url);
             let text: string;
             if (responseType === 'data-url') {
@@ -44,7 +51,7 @@ if (typeof chrome.runtime.sendMessage === 'function') {
         nativeSendMessage.apply(chrome.runtime, args);
     };
 } else {
-    chrome.runtime.sendMessage = sendMessage;
+    chrome.runtime.sendMessage = sendMessage as any;
 }
 
 if (!chrome.runtime.onMessage) {
