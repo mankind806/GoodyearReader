@@ -11,7 +11,8 @@
             "chrome",
             "node",
             "jest",
-            "jest-extended"
+            "jest-extended",
+            "malevic"
         ],
         "esModuleInterop": true,
         "skipLibCheck": true,
