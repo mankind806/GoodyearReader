@@ -675,15 +675,19 @@ export function getSRGBLightness(r: number, g: number, b: number): number {
     return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 }
 
-let canvas: HTMLCanvasElement;
-let context: CanvasRenderingContext2D;
+let context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 function domParseColor($color: string) {
     if (!context) {
-        canvas = document.createElement('canvas');
-        canvas.width = 1;
-        canvas.height = 1;
-        context = canvas.getContext('2d', {willReadFrequently: true})!;
+        if (typeof OffscreenCanvas !== 'undefined') {
+            const canvas = new OffscreenCanvas(1, 1);
+            context = canvas.getContext('2d', {willReadFrequently: true})!;
+        } else {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1;
+            canvas.height = 1;
+            context = canvas.getContext('2d', {willReadFrequently: true})!;
+        }
     }
     context.fillStyle = $color;
     context.fillRect(0, 0, 1, 1);
