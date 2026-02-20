@@ -41,6 +41,9 @@ let fixes: DynamicThemeFix | null = null;
 let isIFrame: boolean | null = null;
 let ignoredImageAnalysisSelectors: string[] = [];
 let ignoredInlineSelectors: string[] = [];
+let allDynamicThemeFixes: DynamicThemeFix[] | null = null;
+let historyWatcher: number | null = null;
+let lastURL: string | null = null;
 
 let staticStyleMap = new WeakMap<ParentNode, Map<string, HTMLStyleElement>>();
 
@@ -644,15 +647,48 @@ function tryInvertChromePDF() {
     });
 }
 
+function updateThemeOnHistoryStateChange() {
+    const URL = document.location.href;
+    if (URL === lastURL) {
+        return;
+    }
+    lastURL = URL;
+    if (allDynamicThemeFixes) {
+        const newFix = selectRelevantFix(URL, allDynamicThemeFixes);
+        createOrUpdateDynamicThemeInternal(theme!, newFix, isIFrame!);
+    }
+}
+
+function stopWatchingForHistoryState() {
+    if (historyWatcher) {
+        clearInterval(historyWatcher);
+        historyWatcher = null;
+    }
+    window.removeEventListener('popstate', updateThemeOnHistoryStateChange);
+    window.removeEventListener('hashchange', updateThemeOnHistoryStateChange);
+}
+
+function startWatchingForHistoryState() {
+    if (historyWatcher) {
+        return;
+    }
+    lastURL = document.location.href;
+    // Checks for history changes.
+    // We need to use setInterval because pushState and replaceState are not triggering any events.
+    historyWatcher = setInterval(updateThemeOnHistoryStateChange, 500) as unknown as number;
+    window.addEventListener('popstate', updateThemeOnHistoryStateChange);
+    window.addEventListener('hashchange', updateThemeOnHistoryStateChange);
+    cleaners.push(stopWatchingForHistoryState);
+}
+
 /**
  * TODO: expose this function to API builds via src/api function enable()
  */
 export function createOrUpdateDynamicTheme(theme: Theme, dynamicThemeFixes: DynamicThemeFix[], iframe: boolean): void {
     const dynamicThemeFix = selectRelevantFix(document.location.href, dynamicThemeFixes);
 
-    // Most websites will have only the generic fix applied ('*'), some will have generic fix and one site-specific fix (two in total),
-    // and very few will have multiple site-specific fixes
-    // TODO: add a navigation listener here for this case
+    allDynamicThemeFixes = dynamicThemeFixes;
+    startWatchingForHistoryState();
 
     createOrUpdateDynamicThemeInternal(theme, dynamicThemeFix, iframe);
 }
@@ -836,9 +872,11 @@ export function cleanDynamicThemeCache(): void {
     removeDocumentVisibilityListener();
     cancelRendering();
     stopWatchingForUpdates();
+    stopWatchingForHistoryState();
     cleanModificationCache();
     clearColorCache();
     releaseVariablesSheet();
     prevTheme = null;
     prevFixes = null;
+    allDynamicThemeFixes = null;
 }
