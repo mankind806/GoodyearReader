@@ -142,10 +142,16 @@ export function createStyleSheetModifier(): StyleSheetModifier {
             rules: Array<ReadyGroup | ReadyStyleRule>;
         }
 
+        interface VariableSlot {
+            isSlot: true;
+            declarations: ReadyDeclaration[];
+            varKey: number;
+        }
+
         interface ReadyStyleRule {
             isGroup: false;
             selector: string;
-            declarations: ReadyDeclaration[];
+            declarations: Array<ReadyDeclaration | VariableSlot>;
         }
 
         interface ReadyDeclaration {
@@ -181,9 +187,18 @@ export function createStyleSheetModifier(): StyleSheetModifier {
 
             let ruleText = `${selectorText} {`;
             for (const dec of declarations) {
-                const {property, value, important} = dec;
-                if (value) {
-                    ruleText += ` ${property}: ${value}${important ? ' !important' : ''};`;
+                if ('isSlot' in dec) {
+                    for (const subDec of dec.declarations) {
+                        const {property, value, important} = subDec;
+                        if (value) {
+                            ruleText += ` ${property}: ${value}${important ? ' !important' : ''};`;
+                        }
+                    }
+                } else {
+                    const {property, value, important} = dec;
+                    if (value) {
+                        ruleText += ` ${property}: ${value}${important ? ' !important' : ''};`;
+                    }
                 }
             }
             ruleText += ' }';
@@ -232,10 +247,16 @@ export function createStyleSheetModifier(): StyleSheetModifier {
             const readyDeclarations = readyStyleRule.declarations;
             group.rules.push(readyStyleRule);
 
-            function handleAsyncDeclaration(property: string, modified: Promise<string | null>, important: boolean, sourceValue: string) {
+            function handleAsyncDeclaration(
+                property: string,
+                modified: Promise<string | null>,
+                important: boolean,
+                sourceValue: string,
+                targetArray: {push: (d: ReadyDeclaration) => void} = readyDeclarations
+            ) {
                 const asyncKey = ++asyncDeclarationCounter;
                 const asyncDeclaration: ReadyDeclaration = {property, value: null, important, asyncKey, sourceValue};
-                readyDeclarations.push(asyncDeclaration);
+                targetArray.push(asyncDeclaration);
                 const currentRenderId = renderId;
                 modified.then((asyncValue) => {
                     if (!asyncValue || isAsyncCancelled() || currentRenderId !== renderId) {
@@ -255,20 +276,26 @@ export function createStyleSheetModifier(): StyleSheetModifier {
                 const {declarations: varDecs, onTypeChange} = modified;
                 const varKey = ++varDeclarationCounter;
                 const currentRenderId = renderId;
-                const initialIndex = readyDeclarations.length;
-                let oldDecs: ReadyDeclaration[] = [];
+
+                const variableSlot: VariableSlot = {
+                    isSlot: true,
+                    declarations: [],
+                    varKey,
+                };
+
+                readyDeclarations.push(variableSlot);
+                const slotDeclarations = variableSlot.declarations;
+
                 if (varDecs.length === 0) {
                     const tempDec = {property, value: sourceValue, important, sourceValue, varKey};
-                    readyDeclarations.push(tempDec);
-                    oldDecs = [tempDec];
+                    slotDeclarations.push(tempDec);
                 }
                 varDecs.forEach((mod) => {
                     if (mod.value instanceof Promise) {
-                        handleAsyncDeclaration(mod.property, mod.value, important, sourceValue);
+                        handleAsyncDeclaration(mod.property, mod.value, important, sourceValue, slotDeclarations);
                     } else {
                         const readyDec = {property: mod.property, value: mod.value, important, sourceValue, varKey};
-                        readyDeclarations.push(readyDec);
-                        oldDecs.push(readyDec);
+                        slotDeclarations.push(readyDec);
                     }
                 });
                 onTypeChange.addListener((newDecs) => {
@@ -278,10 +305,8 @@ export function createStyleSheetModifier(): StyleSheetModifier {
                     const readyVarDecs = newDecs.map((mod) => {
                         return {property: mod.property, value: mod.value as string, important, sourceValue, varKey};
                     });
-                    // TODO: Don't search for index, store some way or use Linked List.
-                    const index = readyDeclarations.indexOf(oldDecs[0], initialIndex);
-                    readyDeclarations.splice(index, oldDecs.length, ...readyVarDecs);
-                    oldDecs = readyVarDecs;
+
+                    variableSlot.declarations = readyVarDecs;
                     rebuildVarRule(varKey);
                 });
                 varTypeChangeCleaners.add(() => onTypeChange.removeListeners());
@@ -346,12 +371,24 @@ export function createStyleSheetModifier(): StyleSheetModifier {
 
             iterateReadyRules(rootReadyGroup, sheet, (rule, target) => {
                 const index = target.cssRules.length;
-                rule.declarations.forEach(({asyncKey, varKey}) => {
-                    if (asyncKey != null) {
-                        asyncDeclarations.set(asyncKey, {rule, target, index});
-                    }
-                    if (varKey != null) {
-                        varDeclarations.set(varKey, {rule, target, index});
+                rule.declarations.forEach((decl) => {
+                    if ('isSlot' in decl) {
+                        if (decl.varKey != null) {
+                            varDeclarations.set(decl.varKey, {rule, target, index});
+                        }
+                        decl.declarations.forEach((d) => {
+                            if (d.asyncKey != null) {
+                                asyncDeclarations.set(d.asyncKey, {rule, target, index});
+                            }
+                        });
+                    } else {
+                        const {asyncKey, varKey} = decl;
+                        if (asyncKey != null) {
+                            asyncDeclarations.set(asyncKey, {rule, target, index});
+                        }
+                        if (varKey != null) {
+                            varDeclarations.set(varKey, {rule, target, index});
+                        }
                     }
                 });
                 setRule(target, index, rule);
