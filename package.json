@@ -76,6 +76,7 @@
     "@stylistic/eslint-plugin": "5.8.0",
     "@types/chrome": "0.1.36",
     "@types/eslint": "9.6.1",
+    "@types/firefox-webext-browser": "^143.0.0",
     "@types/jasmine": "6.0.0",
     "@types/jest": "30.0.0",
     "@types/karma": "6.3.9",

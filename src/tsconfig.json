@@ -10,7 +10,8 @@
             "DOM.Iterable"
         ],
         "types": [
-            "chrome"
+            "chrome",
+            "firefox-webext-browser"
         ],
         "allowJs": true,
         "downlevelIteration": true,
