@@ -1,13 +1,13 @@
-import {m} from 'malevic';
+import { m } from 'malevic';
 
-import type {ExtensionData, ExtWrapper} from '../../../../definitions';
-import {AutomationMode} from '../../../../utils/automation';
-import {HOMEPAGE_URL} from '../../../../utils/links';
-import {getLocalMessage} from '../../../../utils/locales';
-import {isChromium} from '../../../../utils/platform';
-import {isLocalFile} from '../../../../utils/url';
-import {Toggle} from '../../../controls';
-import {SettingsIcon, SunMoonIcon, SystemIcon, WatchIcon} from '../../../icons';
+import type { ExtensionData, ExtWrapper } from '../../../../definitions';
+import { AutomationMode } from '../../../../utils/automation';
+import { HOMEPAGE_URL } from '../../../../utils/links';
+import { getLocalMessage } from '../../../../utils/locales';
+import { isChromium } from '../../../../utils/platform';
+import { isLocalFile } from '../../../../utils/url';
+import { Toggle } from '../../../controls';
+import { SettingsIcon, SunMoonIcon, SystemIcon, WatchIcon } from '../../../icons';
 import SiteToggle from '../site-toggle';
 
 import MoreNewHighlight from './more-new-highlight';
@@ -23,8 +23,8 @@ type HeaderProps = ExtWrapper & {
     moreToggleSettingsOpen: boolean;
 };
 
-export function getAutomationMessage(props: {data: ExtensionData}) {
-    const {data} = props;
+export function getAutomationMessage(props: { data: ExtensionData }) {
+    const { data } = props;
     const isAutomation = data.settings.automation.enabled;
     const isTimeAutomation = data.settings.automation.mode === AutomationMode.TIME;
     const isLocationAutomation = data.settings.automation.mode === AutomationMode.LOCATION;
@@ -40,15 +40,15 @@ export function getAutomationMessage(props: {data: ExtensionData}) {
 }
 
 export function toggleExtension(props: ExtWrapper, enabled: boolean) {
-    const {data, actions} = props;
+    const { data, actions } = props;
     actions.changeSettings({
         enabled,
-        automation: {...data.settings.automation, ...{enabled: false}},
+        automation: { ...data.settings.automation, ...{ enabled: false } },
     });
 }
 
 export function getSiteToggleMessage(props: ExtWrapper) {
-    const {data} = props;
+    const { data } = props;
     const tab = data.activeTab;
     const isFile = isChromium && isLocalFile(tab.url);
 
@@ -66,7 +66,7 @@ export function getSiteToggleMessage(props: ExtWrapper) {
 }
 
 function Header(props: HeaderProps) {
-    const {data, actions, onMoreSiteSettingsClick, onMoreToggleSettingsClick, moreToggleSettingsOpen} = props;
+    const { data, actions, onMoreSiteSettingsClick, onMoreToggleSettingsClick, moreToggleSettingsOpen } = props;
 
     function toggleApp(enabled: boolean) {
         toggleExtension(props, enabled);
@@ -79,7 +79,7 @@ function Header(props: HeaderProps) {
     const isLocationAutomation = data.settings.automation.mode === AutomationMode.LOCATION;
     const now = new Date();
 
-    const automationMessage = getAutomationMessage({data});
+    const automationMessage = getAutomationMessage({ data });
 
     const isProtected = !isFile && ((!__CHROMIUM_MV3__ && !tab.isInjected) || tab.isProtected);
     const isProtectedFile = isFile && !data.isAllowedFileSchemeAccess;
