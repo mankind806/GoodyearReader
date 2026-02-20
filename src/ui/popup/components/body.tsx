@@ -13,9 +13,10 @@ import {compose} from '../../utils';
 import NewBody from '../body';
 
 import FilterSettings from './filter-settings';
-import {Header, MoreSiteSettings, MoreToggleSettings} from './header';
+import {Header, MoreSiteSettings} from './header';
 import Loader from './loader';
 import MoreSettings from './more-settings';
+import {PortalTarget} from './portal';
 import {NewsGroup, NewsButton} from './news';
 import {MobileLinks, MobileLinksButton} from './news/mobile-links';
 import SiteListSettings from './site-list-settings';
@@ -225,6 +226,7 @@ function Body(props: BodyProps & {fonts: string[]} & {installation: {date: numbe
                 actions={props.actions}
                 onMoreSiteSettingsClick={toggleMoreSiteSettings}
                 onMoreToggleSettingsClick={toggleMoreToggleSettings}
+                moreToggleSettingsOpen={state.moreToggleSettingsOpen}
             />
 
             <TabPanel
@@ -279,12 +281,7 @@ function Body(props: BodyProps & {fonts: string[]} & {installation: {date: numbe
                 isExpanded={state.moreSiteSettingsOpen}
                 onClose={toggleMoreSiteSettings}
             />
-            <MoreToggleSettings
-                data={props.data}
-                actions={props.actions}
-                isExpanded={state.moreToggleSettingsOpen}
-                onClose={toggleMoreToggleSettings}
-            />
+            <PortalTarget name="more-toggle-settings" />
         </body>
     );
 }
