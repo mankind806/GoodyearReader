@@ -10,6 +10,7 @@
         ],
         "types": [
             "chrome",
+            "malevic",
             "node",
             "jest",
             "jest-extended",
