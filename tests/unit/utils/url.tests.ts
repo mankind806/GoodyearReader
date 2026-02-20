@@ -1,4 +1,4 @@
-import {indexURLTemplateList, isPDF, isURLInIndexedList, isURLMatched} from '../../../src/utils/url';
+import {indexURLTemplateList, isLocalFile, isPDF, isURLInIndexedList, isURLMatched} from '../../../src/utils/url';
 
 describe('Domain utilities', () => {
     test('URL match', () => {
@@ -53,6 +53,19 @@ describe('Domain utilities', () => {
         expect(isURLMatched('https://[2001:0DB8:AC10:FE02::200E]/', '[2001:0DB8:AC10:FE01::200E]')).toEqual(false);
         expect(isURLMatched('https://[2001:0DB8:AC10:FE01::200E]:8080/', '[2001:0DB8:AC10:FE01::200E]:8080')).toEqual(true);
         expect(isURLMatched('https://[2001:0DB8:AC10:FE02::200E]:1024/', '[2001:0DB8:AC10:FE01::200E]:8080')).toEqual(false);
+    });
+
+    test('isLocalFile', () => {
+        expect(isLocalFile('file:///C:/path/to/file')).toBe(true);
+        expect(isLocalFile('file:///etc/hosts')).toBe(true);
+        expect(isLocalFile('file:///users/test.html')).toBe(true);
+        expect(isLocalFile('http://example.com')).toBe(false);
+        expect(isLocalFile('https://example.com')).toBe(false);
+        expect(isLocalFile('ftp://example.com/file')).toBe(false);
+        expect(isLocalFile('about:blank')).toBe(false);
+        expect(isLocalFile('chrome-extension://id/page.html')).toBe(false);
+        expect(isLocalFile('file://localhost/path')).toBe(false);
+        expect(isLocalFile('')).toBe(false);
     });
 
     test('URL is PDF', () => {
