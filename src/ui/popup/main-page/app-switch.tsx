@@ -14,27 +14,25 @@ export default function AppSwitch(props: ViewProps) {
     const isLocationAutomation = props.data.settings.automation.mode === AutomationMode.LOCATION;
     const now = new Date();
 
-    // TODO: Replace messages with some IDs.
     const values = [
-        getLocalMessage('on'),
-        'Auto',
-        getLocalMessage('off'),
+        {value: 'on', content: getLocalMessage('on')},
+        {value: 'auto', content: 'Auto'},
+        {value: 'off', content: getLocalMessage('off')},
     ];
-    const value = isOn ? values[0] : isOff ? values[2] : values[1];
+    const value = isOn ? 'on' : isOff ? 'off' : 'auto';
 
     function onSwitchChange(v: string) {
-        const index = values.indexOf(v);
-        if (index === 0) {
+        if (v === 'on') {
             props.actions.changeSettings({
                 enabled: true,
                 automation: {... props.data.settings.automation, ...{enabled: false}},
             });
-        } else if (index === 2) {
+        } else if (v === 'off') {
             props.actions.changeSettings({
                 enabled: false,
                 automation:  {... props.data.settings.automation, ...{enabled: false}},
             });
-        } else if (index === 1) {
+        } else if (v === 'auto') {
             props.actions.changeSettings({
                 automation: {... props.data.settings.automation, ...{mode: AutomationMode.SYSTEM, enabled: true}},
             });
