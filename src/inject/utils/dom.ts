@@ -339,61 +339,107 @@ function getElementsTreeOperations(mutations: MutationRecord[]): ElementsTreeOpe
     return {additions, moves, deletions};
 }
 
-interface OptimizedTreeObserverCallbacks {
+export interface OptimizedTreeObserverCallbacks {
     onMinorMutations: (root: Document | ShadowRoot, operations: ElementsTreeOperations) => void;
     onHugeMutations: (root: Document | ShadowRoot) => void;
 }
 
-const optimizedTreeObservers = new Map<Node, MutationObserver>();
-const optimizedTreeCallbacks = new WeakMap<MutationObserver, Set<OptimizedTreeObserverCallbacks>>();
+interface RootData {
+    callbacks: Set<OptimizedTreeObserverCallbacks>;
+    hadHugeMutationsBefore: boolean;
+    subscribedForReadyState: boolean;
+    domReadyListener?: () => void;
+}
 
-// TODO: Use a single function to observe all shadow roots.
-export function createOptimizedTreeObserver(root: Document | ShadowRoot, callbacks: OptimizedTreeObserverCallbacks): {disconnect: () => void} {
-    let observer: MutationObserver;
-    let observerCallbacks: Set<OptimizedTreeObserverCallbacks>;
-    let domReadyListener: () => void;
+class SharedOptimizedTreeObserver {
+    private observer: MutationObserver;
+    private observers = new Map<Node, RootData>();
 
-    if (optimizedTreeObservers.has(root)) {
-        observer = optimizedTreeObservers.get(root)!;
-        observerCallbacks = optimizedTreeCallbacks.get(observer)!;
-    } else {
-        let hadHugeMutationsBefore = false;
-        let subscribedForReadyState = false;
-
-        observer = new MutationObserver((mutations: MutationRecord[]) => {
-            if (isHugeMutation(mutations)) {
-                if (!hadHugeMutationsBefore || isDOMReady()) {
-                    observerCallbacks.forEach(({onHugeMutations}) => onHugeMutations(root));
-                } else if (!subscribedForReadyState) {
-                    domReadyListener = () => observerCallbacks.forEach(({onHugeMutations}) => onHugeMutations(root));
-                    addDOMReadyListener(domReadyListener);
-                    subscribedForReadyState = true;
-                }
-                hadHugeMutationsBefore = true;
-            } else {
-                const elementsOperations = getElementsTreeOperations(mutations);
-                observerCallbacks.forEach(({onMinorMutations}) => onMinorMutations(root, elementsOperations));
-            }
-        });
-        observer.observe(root, {childList: true, subtree: true});
-        optimizedTreeObservers.set(root, observer);
-        observerCallbacks = new Set();
-        optimizedTreeCallbacks.set(observer, observerCallbacks);
+    constructor() {
+        this.observer = new MutationObserver(this.onMutations);
     }
 
-    observerCallbacks.add(callbacks);
+    private onMutations = (mutations: MutationRecord[]) => {
+        const mutationsByRoot = new Map<Node, MutationRecord[]>();
+        mutations.forEach((m) => {
+            const root = m.target.getRootNode();
+            if (this.observers.has(root)) {
+                if (!mutationsByRoot.has(root)) {
+                    mutationsByRoot.set(root, []);
+                }
+                mutationsByRoot.get(root)!.push(m);
+            }
+        });
 
-    return {
-        disconnect() {
-            observerCallbacks.delete(callbacks);
-            if (domReadyListener) {
-                removeDOMReadyListener(domReadyListener);
+        mutationsByRoot.forEach((records, root) => {
+            const data = this.observers.get(root);
+            if (!data) {
+                return;
             }
-            if (observerCallbacks.size === 0) {
-                observer.disconnect();
-                optimizedTreeCallbacks.delete(observer);
-                optimizedTreeObservers.delete(root);
+            const {callbacks} = data;
+
+            if (isHugeMutation(records)) {
+                if (!data.hadHugeMutationsBefore || isDOMReady()) {
+                    callbacks.forEach(({onHugeMutations}) => onHugeMutations(root as Document | ShadowRoot));
+                } else if (!data.subscribedForReadyState) {
+                    data.domReadyListener = () => {
+                        callbacks.forEach(({onHugeMutations}) => onHugeMutations(root as Document | ShadowRoot));
+                    };
+                    addDOMReadyListener(data.domReadyListener);
+                    data.subscribedForReadyState = true;
+                }
+                data.hadHugeMutationsBefore = true;
+            } else {
+                const elementsOperations = getElementsTreeOperations(records);
+                callbacks.forEach(({onMinorMutations}) => onMinorMutations(root as Document | ShadowRoot, elementsOperations));
             }
-        },
+        });
     };
+
+    public observe(root: Document | ShadowRoot, callbacks: OptimizedTreeObserverCallbacks) {
+        if (!this.observers.has(root)) {
+            this.observer.observe(root, {childList: true, subtree: true});
+            this.observers.set(root, {
+                callbacks: new Set(),
+                hadHugeMutationsBefore: false,
+                subscribedForReadyState: false,
+            });
+        }
+        const data = this.observers.get(root)!;
+        data.callbacks.add(callbacks);
+
+        return {
+            disconnect: () => {
+                data.callbacks.delete(callbacks);
+                if (data.callbacks.size === 0) {
+                    this.disconnectRoot(root);
+                }
+            },
+        };
+    }
+
+    private disconnectRoot(root: Node) {
+        const data = this.observers.get(root);
+        if (data && data.domReadyListener) {
+            removeDOMReadyListener(data.domReadyListener);
+        }
+
+        const records = this.observer.takeRecords();
+        this.observer.disconnect();
+        this.observers.delete(root);
+
+        if (records.length > 0) {
+            this.onMutations(records);
+        }
+
+        this.observers.forEach((_, r) => {
+            this.observer.observe(r, {childList: true, subtree: true});
+        });
+    }
+}
+
+const sharedObserver = new SharedOptimizedTreeObserver();
+
+export function createOptimizedTreeObserver(root: Document | ShadowRoot, callbacks: OptimizedTreeObserverCallbacks): {disconnect: () => void} {
+    return sharedObserver.observe(root, callbacks);
 }

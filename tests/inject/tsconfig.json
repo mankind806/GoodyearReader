@@ -19,7 +19,7 @@
         "jsxFactory": "m",
         "moduleResolution": "Node",
         "noEmit": true,
-        "noImplicitAny": true,
+        "noImplicitAny": false,
         "removeComments": false,
         "sourceMap": true,
         "inlineSources": true,
