@@ -2,6 +2,7 @@ import type {Theme} from '../../definitions';
 import {isChromium} from '../../utils/platform';
 import {getHashCode} from '../../utils/text';
 import {createAsyncTasksQueue} from '../../utils/throttle';
+import {logWarn} from '../utils/log';
 
 import {iterateCSSRules, iterateCSSDeclarations, isMediaRule, isLayerRule, isStyleRule} from './css-rules';
 import {themeCacheKeys} from './modify-colors';
@@ -100,7 +101,6 @@ export function createStyleSheetModifier(): StyleSheetModifier {
 
             // A very specific case to skip. This causes a lot of calls to `getModifiableCSSDeclaration`
             // and currently contributes nothing in real-world case.
-            // TODO: Allow `setRule` to throw a exception when we're modifying SVGs namespace styles.
             if (rule.style.all === 'revert') {
                 return;
             }
@@ -203,7 +203,11 @@ export function createStyleSheetModifier(): StyleSheetModifier {
             }
             ruleText += ' }';
 
-            target.insertRule(ruleText, index);
+            try {
+                target.insertRule(ruleText, index);
+            } catch (err) {
+                logWarn(err);
+            }
         }
 
         interface RuleInfo {
