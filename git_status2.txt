@@ -1,0 +1,10 @@
+Auf Branch main
+Ihr Branch ist 8 Commits vor 'origin/main'.
+  (benutzen Sie "git push", um lokale Commits zu publizieren)
+
+Unversionierte Dateien:
+  (benutzen Sie "git add <Datei>...", um die Änderungen zum Commit vorzumerken)
+	git_status2.txt
+
+nichts zum Commit vorgemerkt, aber es gibt unversionierte Dateien
+(benutzen Sie "git add" zum Versionieren)

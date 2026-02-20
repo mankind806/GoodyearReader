@@ -1,0 +1,13 @@
+Merging refactor-app-switch-logic-14263082892963756180...
+automatischer Merge von src/ui/controls/multi-switch/index.tsx
+KONFLIKT (Inhalt): Merge-Konflikt in src/ui/controls/multi-switch/index.tsx
+automatischer Merge von src/ui/popup/main-page/app-switch.tsx
+KONFLIKT (Inhalt): Merge-Konflikt in src/ui/popup/main-page/app-switch.tsx
+automatischer Merge von tests/unit/jest.config.mjs
+KONFLIKT (Inhalt): Merge-Konflikt in tests/unit/jest.config.mjs
+automatischer Merge von tests/unit/tsconfig.json
+KONFLIKT (Inhalt): Merge-Konflikt in tests/unit/tsconfig.json
+automatischer Merge von tests/unit/ui/controls/multi-switch.tests.tsx
+KONFLIKT (hinzufügen/hinzufügen): Merge-Konflikt in tests/unit/ui/controls/multi-switch.tests.tsx
+Automatischer Merge fehlgeschlagen; beheben Sie die Konflikte und committen Sie dann das Ergebnis.
+Conflict in refactor-app-switch-logic-14263082892963756180!
