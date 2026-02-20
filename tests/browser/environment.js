@@ -279,7 +279,7 @@ export default class CustomJestEnvironment extends TestEnvironment {
         let errors = checkAll();
         for (let i = 0; (errors.length !== 0) && (i < 10); i++) {
             timeout *= 2;
-            await new Promise((r) => requestIdleCallback(r, {timeout}));
+            await new Promise((r) => setTimeout(r, timeout));
             errors = checkAll();
         }
         return errors;
