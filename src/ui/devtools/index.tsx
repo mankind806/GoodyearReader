@@ -6,8 +6,6 @@ import Connector from '../connect/connector';
 
 import Body from './components/body';
 
-declare const __CHROMIUM_MV3__: boolean;
-
 function renderBody(data: ExtensionData, devToolsData: DevToolsData, actions: Connector) {
     sync(document.body, <Body data={data} devtools={devToolsData} actions={actions} />);
 }
@@ -103,11 +101,3 @@ if (__TEST__) {
     };
 }
 
-if (__CHROMIUM_MV3__) {
-    // See getExtensionPageTabMV3() for explanation of what it is
-    chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
-        if (message === 'getExtensionPageTabMV3_ping') {
-            sendResponse('getExtensionPageTabMV3_pong');
-        }
-    });
-}

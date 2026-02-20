@@ -1,7 +1,5 @@
 import {isMobile} from '../utils/platform';
 
-declare const __CHROMIUM_MV3__: boolean;
-
 export function classes(...args: Array<string | {[cls: string]: boolean}>): string {
     const classes: string[] = [];
     args.filter((c) => Boolean(c)).forEach((c) => {
@@ -144,37 +142,7 @@ export async function getFontList(): Promise<string[]> {
 
 type ExtensionPage = 'devtools' | 'options' | 'stylesheet-editor';
 
-// TODO(Anton): There must be a better way to do this
-// This function ping-pongs a message to possible DevTools popups.
-// This function should have reasonable performance since it sends
-// messages only to popups and not regular windows.
-async function getExtensionPageTabMV3(): Promise<chrome.tabs.Tab | null> {
-    return new Promise((resolve) => {
-        chrome.windows.getAll({
-            populate: true,
-            windowTypes: ['popup'],
-        }, (w) => {
-            const responses: Array<Promise<string>> = [];
-            let found = false;
-            for (const window of w) {
-                const response = chrome.tabs.sendMessage<string, 'getExtensionPageTabMV3_pong'>(window.tabs![0]!.id!, 'getExtensionPageTabMV3_ping', {frameId: 0});
-                response.then((response) => {
-                    if (response === 'getExtensionPageTabMV3_pong') {
-                        found = true;
-                        resolve(window.tabs![0]);
-                    }
-                });
-                responses.push(response);
-            }
-            Promise.all(responses).then(() => !found && resolve(null));
-        });
-    });
-}
-
 async function getExtensionPageTab(url: string): Promise<chrome.tabs.Tab | null> {
-    if (__CHROMIUM_MV3__) {
-        return getExtensionPageTabMV3();
-    }
     return new Promise<chrome.tabs.Tab>((resolve) => {
         chrome.tabs.query({
             url,
