@@ -406,27 +406,31 @@ export default class TabManager {
     }
 
     static async updateContentScript(options: {runOnProtectedPages: boolean}): Promise<void> {
-        (await queryTabs({discarded: false}))
+        const tabs = (await queryTabs({discarded: false}))
             .filter((tab) => __CHROMIUM_MV3__ || options.runOnProtectedPages || canInjectScript(tab.url))
-            .filter((tab) => !TabManager.tabs[tab.id!])
-            .forEach((tab) => {
-                if (__CHROMIUM_MV3__) {
-                    chrome.scripting.executeScript({
+            .filter((tab) => !TabManager.tabs[tab.id!]);
+        for (const tab of tabs) {
+            if (__CHROMIUM_MV3__) {
+                try {
+                    await chrome.scripting.executeScript({
                         target: {
                             tabId: tab.id!,
                             allFrames: true,
                         },
                         files: ['/inject/index.js'],
-                    }, () => logInfo('Could not update content script in tab', tab, chrome.runtime.lastError));
-                } else {
-                    chrome.tabs.executeScript(tab.id!, {
-                        runAt: 'document_start',
-                        file: '/inject/index.js',
-                        allFrames: true,
-                        matchAboutBlank: true,
                     });
+                } catch (e) {
+                    logInfo('Could not update content script in tab', tab, e);
                 }
-            });
+            } else {
+                chrome.tabs.executeScript(tab.id!, {
+                    runAt: 'document_start',
+                    file: '/inject/index.js',
+                    allFrames: true,
+                    matchAboutBlank: true,
+                });
+            }
+        }
     }
 
     static async registerMailDisplayScript(): Promise<void> {
