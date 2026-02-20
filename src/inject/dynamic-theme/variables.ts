@@ -193,7 +193,7 @@ export class VariablesStore {
                         );
                     }
                     const bgModifier = getBgImageModifier(modifiedValue, rule, ignoredImgSelectors, isCancelled);
-                    modifiedValue = typeof bgModifier === 'function' ? bgModifier(theme) : bgModifier!;
+                    modifiedValue = typeof bgModifier === 'function' ? (bgModifier(theme) as string | Promise<string | null>) : bgModifier!;
                     declarations.push({
                         property,
                         value: modifiedValue,
@@ -271,6 +271,7 @@ export class VariablesStore {
             return (theme) => {
                 const unknownVars = new Set<string>();
                 const modify = () => {
+                    unknownVars.clear();
                     const variableReplaced = replaceCSSVariablesNames(
                         sourceValue,
                         (v) => {
@@ -299,9 +300,29 @@ export class VariablesStore {
                 const modified = modify();
                 if (unknownVars.size > 0) {
                     // web.dev and voice.google.com issue where the variable is never defined, but the fallback is.
-                    // TODO: Return a fallback value along with a way to subscribe for a change.
                     if (isFallbackResolved(modified)) {
-                        return modified;
+                        const callbacks = new Set<() => void>();
+                        const addListener = (onTypeChange: (value: string | Promise<string | null>) => void) => {
+                            const callback = () => {
+                                const newValue = modify();
+                                onTypeChange(newValue);
+                            };
+                            callbacks.add(callback);
+                            unknownVars.forEach((varName) => {
+                                this.subscribeForVarTypeChange(varName, callback);
+                            });
+                        };
+                        const removeListeners = () => {
+                            callbacks.forEach((callback) => {
+                                unknownVars.forEach((varName) => {
+                                    this.unsubscribeFromVariableTypeChanges(varName, callback);
+                                });
+                            });
+                        };
+                        return {
+                            value: modified,
+                            onTypeChange: {addListener, removeListeners},
+                        };
                     }
                     return new Promise<string>((resolve) => {
                         for (const unknownVar of unknownVars.values()) {

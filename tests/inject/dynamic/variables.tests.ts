@@ -1295,4 +1295,26 @@ describe('CSS VARIABLES OVERRIDE', () => {
         const elementStyle = getComputedStyle(container.querySelector('h1'));
         expect(elementStyle.backgroundColor).toBe('rgb(204, 0, 0)');
     });
+
+    it('should update fallback value when variable becomes defined', async () => {
+        container.innerHTML = multiline(
+            '<style>',
+            '    h1 {',
+            '        background: var(--unknown, red);',
+            '    }',
+            '</style>',
+            '<h1>Fallback Subscription</h1>',
+        );
+        createOrUpdateDynamicTheme(theme, null, false);
+        // Should be red (modified)
+        expect(getComputedStyle(container.querySelector('h1')).backgroundColor).toBe('rgb(204, 0, 0)');
+
+        const style = document.createElement('style');
+        style.textContent = ':root { --unknown: green; }';
+        container.append(style);
+
+        await timeout(100);
+        // Should be green (modified)
+        expect(getComputedStyle(container.querySelector('h1')).backgroundColor).toBe('rgb(0, 102, 0)');
+    });
 });

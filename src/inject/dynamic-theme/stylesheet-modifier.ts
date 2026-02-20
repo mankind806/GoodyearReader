@@ -5,7 +5,7 @@ import {createAsyncTasksQueue} from '../../utils/throttle';
 
 import {iterateCSSRules, iterateCSSDeclarations, isMediaRule, isLayerRule, isStyleRule} from './css-rules';
 import {themeCacheKeys} from './modify-colors';
-import type {ModifiableCSSDeclaration, ModifiableCSSRule} from './modify-css';
+import type {ModifiableCSSDeclaration, ModifiableCSSRule, CSSValueModifierWithSubscription} from './modify-css';
 import {getModifiableCSSDeclaration} from './modify-css';
 import {variablesStore} from './variables';
 import type {CSSVariableModifier} from './variables';
@@ -312,6 +312,48 @@ export function createStyleSheetModifier(): StyleSheetModifier {
                 varTypeChangeCleaners.add(() => onTypeChange.removeListeners());
             }
 
+            function handleValueWithSubscription(property: string, modified: CSSValueModifierWithSubscription, important: boolean, sourceValue: string) {
+                const {value, onTypeChange} = modified;
+                const varKey = ++varDeclarationCounter;
+                const currentRenderId = renderId;
+
+                const readyDec: ReadyDeclaration = {property, value: null, important, sourceValue, varKey};
+                readyDeclarations.push(readyDec);
+
+                const updateValue = (val: string | null) => {
+                    readyDec.value = val;
+                    rebuildVarRule(varKey);
+                };
+
+                if (value instanceof Promise) {
+                    value.then((asyncValue) => {
+                        if (!asyncValue || isAsyncCancelled() || currentRenderId !== renderId) {
+                            return;
+                        }
+                        updateValue(asyncValue);
+                    });
+                } else {
+                    readyDec.value = value;
+                }
+
+                onTypeChange.addListener((newValue) => {
+                    if (isAsyncCancelled() || currentRenderId !== renderId) {
+                        return;
+                    }
+                    if (newValue instanceof Promise) {
+                        newValue.then((asyncValue) => {
+                            if (!asyncValue || isAsyncCancelled() || currentRenderId !== renderId) {
+                                return;
+                            }
+                            updateValue(asyncValue);
+                        });
+                    } else {
+                        updateValue(newValue);
+                    }
+                });
+                varTypeChangeCleaners.add(() => onTypeChange.removeListeners());
+            }
+
             declarations.forEach(({property, value, important, sourceValue}) => {
                 if (typeof value === 'function') {
                     const modified = value(theme);
@@ -319,6 +361,8 @@ export function createStyleSheetModifier(): StyleSheetModifier {
                         handleAsyncDeclaration(property, modified, important, sourceValue);
                     } else if (property.startsWith('--')) {
                         handleVarDeclarations(property, modified as any, important, sourceValue);
+                    } else if (typeof modified === 'object' && modified !== null && 'onTypeChange' in modified) {
+                        handleValueWithSubscription(property, modified as CSSValueModifierWithSubscription, important, sourceValue);
                     } else {
                         readyDeclarations.push({property, value: modified as string, important, sourceValue});
                     }
