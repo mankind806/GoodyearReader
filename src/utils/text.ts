@@ -4,26 +4,24 @@ export interface TextRange {
 }
 
 export function getTextPositionMessage(text: string, index: number): string {
-    if (!isFinite(index)) {
+    if (!isFinite(index) || index < 0) {
         throw new Error(`Wrong char index ${index}`);
     }
     let message = '';
     let line = 0;
-    let prevLn: number;
-    let nextLn = 0;
+    let prevLn = -1;
+    let nextLn = -1;
     do {
         line++;
         prevLn = nextLn;
         nextLn = text.indexOf('\n', prevLn + 1);
-    } while (nextLn >= 0 && nextLn <= index);
+    } while (nextLn >= 0 && nextLn < index);
     const column = index - prevLn;
     message += `line ${line}, column ${column}`;
     message += '\n';
-    if (index < text.length) {
-        message += text.substring(prevLn + 1, nextLn);
-    } else {
-        message += text.substring(text.lastIndexOf('\n') + 1);
-    }
+    const contentStart = prevLn + 1;
+    const contentEnd = nextLn >= 0 ? nextLn : text.length;
+    message += text.substring(contentStart, contentEnd);
     message += '\n';
     message += `${new Array(column).join('-')}^`;
     return message;
