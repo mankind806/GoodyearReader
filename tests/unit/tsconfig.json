@@ -3,6 +3,7 @@
     "compilerOptions": {
         "target": "ESNext",
         "module": "CommonJS",
+        "baseUrl": "../../src",
         "lib": [
             "ESNext",
             "Dom"
@@ -23,7 +24,7 @@
         "jsxFactory": "m",
         "jsxFragmentFactory": "m.Fragment",
         "paths": {
-            "@plus/*": ["../../src/stubs/*"]
+            "@plus/*": ["stubs/*"]
         }
     }
 }
