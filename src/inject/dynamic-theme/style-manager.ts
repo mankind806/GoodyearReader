@@ -8,6 +8,7 @@ import {getAbsoluteURL, isRelativeHrefOnAbsolutePath} from '../../utils/url';
 import {readCSSFetchCache, writeCSSFetchCache} from '../cache';
 import {watchForNodePosition, removeNode, iterateShadowHosts, addReadyStateCompleteListener} from '../utils/dom';
 import {logInfo, logWarn} from '../utils/log';
+import {throttle} from '../../utils/throttle';
 
 import {replaceCSSRelativeURLsWithAbsolute, replaceCSSFontFace, getCSSURLValue, cssImportRegex, getCSSBaseBath, ignoredMedia} from './css-rules';
 import {getStyleInjectionMode, injectStyleAway} from './injection';
@@ -149,14 +150,16 @@ export function manageStyle(element: StyleElement, {update, loadingStart, loadin
 
     const sheetModifier = createStyleSheetModifier();
 
+    const throttledUpdate = throttle(update);
+
     const observer = new MutationObserver((mutations) => {
         if (mutations.some((m) => m.type === 'characterData') && containsCSSImport()) {
             // Sometimes when <style> element text is too long, it
             // may still be loading and contain @import later.
             const cssText = (element.textContent ?? '').trim();
-            createOrUpdateCORSCopy(cssText, location.href).then(update);
+            createOrUpdateCORSCopy(cssText, location.href).then(throttledUpdate);
         } else {
-            update();
+            throttledUpdate();
         }
     });
     const observerOptions: MutationObserverInit = {attributes: true, childList: true, subtree: true, characterData: true};
@@ -487,6 +490,7 @@ export function manageStyle(element: StyleElement, {update, loadingStart, loadin
     function pause() {
         observer.disconnect();
         cancelAsyncOperations = true;
+        throttledUpdate.cancel();
         corsCopyPositionWatcher && corsCopyPositionWatcher.stop();
         syncStylePositionWatcher && syncStylePositionWatcher.stop();
         sheetChangeWatcher.stop();

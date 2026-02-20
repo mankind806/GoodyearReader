@@ -5,7 +5,8 @@
         "module": "CommonJS",
         "lib": [
             "ESNext",
-            "Dom"
+            "Dom",
+            "DOM.Iterable"
         ],
         "types": [
             "chrome",
@@ -19,8 +20,10 @@
         "noImplicitAny": true,
         "strictNullChecks": true,
         "inlineSourceMap": true,
+        "baseUrl": "../../src",
         "paths": {
-            "@plus/*": ["../../src/stubs/*"]
+            "@plus/*": ["stubs/*"],
+            "*": ["*"]
         }
     }
 }
