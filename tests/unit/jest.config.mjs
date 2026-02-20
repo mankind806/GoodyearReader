@@ -7,10 +7,12 @@ const rootDir = dirname(createRequire(import.meta.url).resolve('../../package.js
 /** @type {import('@jest/types').Config.InitialOptions} */
 const config = {
     rootDir,
-    testMatch: ['<rootDir>/tests/unit/**/*.tests.ts'],
+    testMatch: ['<rootDir>/tests/unit/**/*.tests.ts', '<rootDir>/tests/unit/**/*.tests.tsx'],
     moduleFileExtensions: ['ts', 'tsx', 'js'],
     moduleNameMapper: {
         '@plus/(.*)': ['<rootDir>/src/stubs/$1'],
+        '^malevic$': '<rootDir>/node_modules/malevic/umd/index.js',
+        '^malevic/dom$': '<rootDir>/node_modules/malevic/umd/dom.js',
     },
     transform: {'^.+\\.ts(x?)$': ['ts-jest', {tsconfig: '<rootDir>/tests/unit/tsconfig.json'}]},
     globals: {
