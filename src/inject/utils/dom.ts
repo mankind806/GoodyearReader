@@ -70,7 +70,7 @@ export function createNodeAsap({
 }
 
 export function removeNode(node: Node | null): void {
-    node && node.parentNode && node.parentNode.removeChild(node);
+    node && (node as ChildNode).remove && (node as ChildNode).remove();
 }
 
 export function watchForNodePosition<T extends Node>(
