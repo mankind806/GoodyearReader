@@ -1,4 +1,43 @@
-import {indexURLTemplateList, isPDF, isURLInIndexedList, isURLMatched} from '../../../src/utils/url';
+import {indexURLTemplateList, isPDF, isURLInIndexedList, isURLMatched, isURLEnabled} from '../../../src/utils/url';
+import type {UserSettings, TabInfo} from '../../../src/definitions';
+import {AutomationMode} from '../../../src/utils/automation';
+
+function createMockUserSettings(overrides: Partial<UserSettings> = {}): UserSettings {
+    const defaults: UserSettings = {
+        enabled: true,
+        fetchNews: false,
+        theme: {} as any,
+        presets: [],
+        customThemes: [],
+        enabledByDefault: true,
+        enabledFor: [],
+        disabledFor: [],
+        changeBrowserTheme: false,
+        syncSettings: true,
+        syncSitesFixes: false,
+        automation: {
+            enabled: false,
+            mode: AutomationMode.SYSTEM,
+            behavior: 'OnOff',
+        },
+        time: {
+            activation: '18:00',
+            deactivation: '9:00',
+        },
+        location: {
+            latitude: null,
+            longitude: null,
+        },
+        previewNewDesign: false,
+        previewNewestDesign: false,
+        enableForPDF: true,
+        enableForProtectedPages: false,
+        enableContextMenus: false,
+        detectDarkTheme: false,
+        schemeVersion: 2,
+    };
+    return {...defaults, ...overrides};
+}
 
 describe('Domain utilities', () => {
     test('URL match', () => {
@@ -142,5 +181,82 @@ describe('Domain utilities', () => {
         expect(isURLInIndexedList('https://www.office.com/excel/', indexed)).toEqual(false);
         expect(isURLInIndexedList('https://www.office.com/excel/edit', indexed)).toEqual(true);
         expect(isURLInIndexedList('https://www.office.com/excel/edit/2000', indexed)).toEqual(true);
+    });
+
+    describe('isURLEnabled', () => {
+        test('Local Files', () => {
+            const settings = createMockUserSettings();
+            const tabInfo: Partial<TabInfo> = {};
+
+            expect(isURLEnabled('file:///C:/test.html', settings, tabInfo, true)).toBe(true);
+            expect(isURLEnabled('file:///C:/test.html', settings, tabInfo, false)).toBe(false);
+            expect(isURLEnabled('https://google.com', settings, tabInfo, false)).toBe(true);
+        });
+
+        test('Protected Pages', () => {
+            const settingsDefault = createMockUserSettings({enableForProtectedPages: false});
+            const settingsProtected = createMockUserSettings({enableForProtectedPages: true});
+            const tabInfoProtected: Partial<TabInfo> = {isProtected: true};
+            const tabInfoNormal: Partial<TabInfo> = {isProtected: false};
+
+            expect(isURLEnabled('https://chrome.google.com/webstore', settingsDefault, tabInfoProtected)).toBe(false);
+            expect(isURLEnabled('https://chrome.google.com/webstore', settingsProtected, tabInfoProtected)).toBe(true);
+            expect(isURLEnabled('https://google.com', settingsDefault, tabInfoNormal)).toBe(true);
+        });
+
+        test('PDF Files', () => {
+            const settingsPDF = createMockUserSettings({enableForPDF: true});
+            const settingsNoPDF = createMockUserSettings({enableForPDF: false});
+            const tabInfo: Partial<TabInfo> = {};
+            const pdfUrl = 'https://example.com/doc.pdf';
+
+            expect(isURLEnabled(pdfUrl, settingsPDF, tabInfo)).toBe(true);
+            expect(isURLEnabled(pdfUrl, settingsNoPDF, tabInfo)).toBe(false);
+        });
+
+        test('Enabled/Disabled Lists (Standard Mode)', () => {
+            const settings = createMockUserSettings({
+                enabledByDefault: true,
+                disabledFor: ['google.com', 'example.com/mail'],
+                enabledFor: ['mail.google.com'],
+            });
+            const tabInfo: Partial<TabInfo> = {};
+
+            expect(isURLEnabled('https://yahoo.com', settings, tabInfo)).toBe(true);
+            expect(isURLEnabled('https://google.com', settings, tabInfo)).toBe(false);
+            expect(isURLEnabled('https://example.com/mail', settings, tabInfo)).toBe(false);
+            expect(isURLEnabled('https://mail.google.com', settings, tabInfo)).toBe(true);
+        });
+
+        test('Enabled/Disabled Lists (Allowlist Mode)', () => {
+            const settings = createMockUserSettings({
+                enabledByDefault: false,
+                enabledFor: ['google.com', '*.yahoo.com'],
+                disabledFor: ['mail.google.com'],
+            });
+            const tabInfo: Partial<TabInfo> = {};
+
+            expect(isURLEnabled('https://yahoo.com', settings, tabInfo)).toBe(false);
+            expect(isURLEnabled('https://google.com', settings, tabInfo)).toBe(true);
+            expect(isURLEnabled('https://mail.google.com', settings, tabInfo)).toBe(false);
+            expect(isURLEnabled('https://bing.com', settings, tabInfo)).toBe(false);
+            expect(isURLEnabled('https://mail.yahoo.com', settings, tabInfo)).toBe(true);
+        });
+
+        test('Dark Theme Detection', () => {
+            const settings = createMockUserSettings({
+                detectDarkTheme: true,
+                enabledByDefault: true,
+            });
+            const settingsNoDetect = createMockUserSettings({
+                detectDarkTheme: false,
+                enabledByDefault: true,
+            });
+
+            expect(isURLEnabled('https://google.com', settings, {isInDarkList: true})).toBe(false);
+            expect(isURLEnabled('https://google.com', settingsNoDetect, {isInDarkList: true})).toBe(false);
+            expect(isURLEnabled('https://google.com', settings, {isDarkThemeDetected: true})).toBe(false);
+            expect(isURLEnabled('https://google.com', settingsNoDetect, {isDarkThemeDetected: true})).toBe(true);
+        });
     });
 });
