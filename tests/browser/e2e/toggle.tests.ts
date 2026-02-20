@@ -26,8 +26,7 @@ async function loadBasicPage(header: string) {
 }
 
 describe('Toggling the extension', () => {
-    // TODO: remove flakes and remove this line
-    jest.retryTimes(10, {logErrorsBeforeRetry: true});
+    jest.setTimeout(30000);
 
     const automationMenuSelector = '.header__more-settings-button';
     const automationSystemSelector = '.header__more-settings__system-dark-mode__checkbox .checkbox__input';
