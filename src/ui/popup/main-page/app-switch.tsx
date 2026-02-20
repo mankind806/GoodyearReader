@@ -6,6 +6,10 @@ import {getLocalMessage} from '../../../utils/locales';
 import {ControlGroup, MultiSwitch} from '../../controls';
 import {SunMoonIcon, SystemIcon, WatchIcon} from '../../icons';
 
+const ID_ON = 'on';
+const ID_OFF = 'off';
+const ID_AUTO = 'auto';
+
 export default function AppSwitch(props: ViewProps) {
     const isOn = props.data.settings.enabled === true && !props.data.settings.automation.enabled;
     const isOff = props.data.settings.enabled === false && !props.data.settings.automation.enabled;
@@ -14,27 +18,25 @@ export default function AppSwitch(props: ViewProps) {
     const isLocationAutomation = props.data.settings.automation.mode === AutomationMode.LOCATION;
     const now = new Date();
 
-    // TODO: Replace messages with some IDs.
     const values = [
-        getLocalMessage('on'),
-        'Auto',
-        getLocalMessage('off'),
+        {value: ID_ON, content: getLocalMessage('on')},
+        {value: ID_AUTO, content: 'Auto'},
+        {value: ID_OFF, content: getLocalMessage('off')},
     ];
-    const value = isOn ? values[0] : isOff ? values[2] : values[1];
+    const value = isOn ? ID_ON : isOff ? ID_OFF : ID_AUTO;
 
     function onSwitchChange(v: string) {
-        const index = values.indexOf(v);
-        if (index === 0) {
+        if (v === ID_ON) {
             props.actions.changeSettings({
                 enabled: true,
                 automation: {... props.data.settings.automation, ...{enabled: false}},
             });
-        } else if (index === 2) {
+        } else if (v === ID_OFF) {
             props.actions.changeSettings({
                 enabled: false,
                 automation:  {... props.data.settings.automation, ...{enabled: false}},
             });
-        } else if (index === 1) {
+        } else if (v === ID_AUTO) {
             props.actions.changeSettings({
                 automation: {... props.data.settings.automation, ...{mode: AutomationMode.SYSTEM, enabled: true}},
             });
