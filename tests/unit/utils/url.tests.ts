@@ -1,6 +1,38 @@
-import {indexURLTemplateList, isPDF, isURLInIndexedList, isURLMatched} from '../../../src/utils/url';
+/**
+ * @jest-environment jsdom
+ */
+
+import {indexURLTemplateList, isPDF, isURLInIndexedList, isURLMatched, parseURL} from '../../../src/utils/url';
 
 describe('Domain utilities', () => {
+    test('URL parse', () => {
+        const u1 = parseURL('https://www.google.com/maps');
+        expect(u1.protocol).toBe('https:');
+        expect(u1.hostname).toBe('www.google.com');
+        expect(u1.pathname).toBe('/maps');
+
+        const u2 = parseURL('https://www.google.com/maps');
+        expect(u1).toBe(u2);
+
+        const u3 = parseURL('maps', 'https://www.google.com/');
+        expect(u3.protocol).toBe('https:');
+        expect(u3.hostname).toBe('www.google.com');
+        expect(u3.pathname).toBe('/maps');
+
+        const u3b = parseURL('maps', 'https://www.google.com/');
+        expect(u3).toBe(u3b);
+
+        const u4 = parseURL('maps', 'https://www.google.com');
+        expect(u4.protocol).toBe('https:');
+        expect(u4.hostname).toBe('www.google.com');
+        expect(u4.pathname).toBe('/maps');
+
+        const u5 = parseURL('//www.google.com/maps');
+        expect(u5.protocol).toBe(location.protocol);
+        expect(u5.hostname).toBe('www.google.com');
+        expect(u5.pathname).toBe('/maps');
+    });
+
     test('URL match', () => {
         expect(isURLMatched('https://www.example.com/', '*')).toEqual(true);
         expect(isURLMatched('https://www.example.com/', '*.*')).toEqual(true);
