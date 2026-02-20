@@ -1,4 +1,5 @@
 import {forEach} from '../../utils/array';
+import {cachedFactory} from '../../utils/cache';
 import {isLayerRuleSupported, isSafari} from '../../utils/platform';
 import {escapeRegExpSpecialChars} from '../../utils/text';
 import {parseURL, getAbsoluteURL} from '../../utils/url';
@@ -112,6 +113,16 @@ export function iterateCSSDeclarations(style: CSSStyleDeclaration, iterate: (pro
     });
 }
 
+const shorthandRegexCache = cachedFactory((key: string) => {
+    const index = key.indexOf('|');
+    const shorthand = key.substring(0, index);
+    const selectorText = key.substring(index + 1);
+    let escapedSelector = escapeRegExpSpecialChars(selectorText);
+    escapedSelector = escapedSelector.replaceAll(/\s+/g, '\\s*'); // Space count can differ
+    escapedSelector = escapedSelector.replaceAll(/::/g, '::?'); // ::before can be :before
+    return new RegExp(`${escapedSelector}\\s*{[^}]*${shorthand}:\\s*([^;}]+)`);
+}, 128);
+
 // `rule.cssText` fails when the rule has both
 // `background: var()` and `background-*`.
 // This fix retrieves the source value from CSS text,
@@ -123,10 +134,7 @@ function handleEmptyShorthand(shorthand: string, style: CSSStyleDeclaration, ite
     if (isStyleRule(parentRule)) {
         const sourceCSSText = parentRule.parentStyleSheet?.ownerNode?.textContent;
         if (sourceCSSText) {
-            let escapedSelector = escapeRegExpSpecialChars(parentRule.selectorText);
-            escapedSelector = escapedSelector.replaceAll(/\s+/g, '\\s*'); // Space count can differ
-            escapedSelector = escapedSelector.replaceAll(/::/g, '::?'); // ::before can be :before
-            const regexp = new RegExp(`${escapedSelector}\\s*{[^}]*${shorthand}:\\s*([^;}]+)`);
+            const regexp = shorthandRegexCache(`${shorthand}|${parentRule.selectorText}`);
             const match = sourceCSSText.match(regexp);
             if (match) {
                 iterate(shorthand, match[1]);
