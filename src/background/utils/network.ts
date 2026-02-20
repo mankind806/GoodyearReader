@@ -79,8 +79,7 @@ interface CacheRecord {
 }
 
 class LimitedCacheStorage {
-    // TODO: remove type cast after dependency update
-    private static readonly QUOTA_BYTES = ((!__TEST__ && (navigator as any).deviceMemory) || 4) * 16 * 1024 * 1024;
+    private static readonly QUOTA_BYTES = ((!__TEST__ && navigator.deviceMemory) || 4) * 16 * 1024 * 1024;
     private static readonly TTL = getDuration({minutes: 10});
     private static readonly ALARM_NAME = 'network';
 
