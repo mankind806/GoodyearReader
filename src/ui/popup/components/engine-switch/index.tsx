@@ -29,13 +29,15 @@ export default function EngineSwitch({engine, onChange}: EngineSwitchProps) {
                 options={engineNames.map(([, name]) => name)}
                 onChange={(value) => onChange(engineNames.find(([, name]) => name === value)![0])}
             />
-            <span
+            <button
                 class={{
                     'engine-switch__css-edit-button': true,
                     'engine-switch__css-edit-button_active': engine === ThemeEngine.staticTheme,
                 }}
                 onclick={openCSSEditor}
-            ></span>
+                aria-label="Edit stylesheet"
+                type="button"
+            ></button>
             <label class="engine-switch__description">{getLocalMessage('theme_generation_mode')}</label>
         </div>
     );
