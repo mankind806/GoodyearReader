@@ -1,5 +1,5 @@
 import {formatCSS} from '../../../src/utils/css-text/format-css';
-import {getParenthesesRange} from '../../../src/utils/text';
+import {escapeRegExpSpecialChars, getParenthesesRange} from '../../../src/utils/text';
 
 test('CSS formatting', () => {
     expect(formatCSS('div { color: red; }'))
@@ -109,4 +109,14 @@ test('Parenthesis Range', () => {
     expect(getParenthesesRange('rgb(0, var(--x, var(--y)), 0)')).toEqual({start: 3, end: 29});
     expect(getParenthesesRange('rgb(0, var(--x, var(--y)), 0)', 4)).toEqual({start: 10, end: 25});
     expect(getParenthesesRange('rgb(0, var(--x, var(--y)), 0), rgb(0, 0, 0)')).toEqual({start: 3, end: 29});
+});
+
+test('Escape RegExp special chars', () => {
+    expect(escapeRegExpSpecialChars('')).toBe('');
+    expect(escapeRegExpSpecialChars('abc')).toBe('abc');
+    expect(escapeRegExpSpecialChars('123')).toBe('123');
+    expect(escapeRegExpSpecialChars('^$.*+?()[]{}|-')).toBe('\\^\\$\\.\\*\\+\\?\\(\\)\\[\\]\\{\\}\\|\\-');
+    expect(escapeRegExpSpecialChars('\\')).toBe('\\\\');
+    expect(escapeRegExpSpecialChars('a.b*c')).toBe('a\\.b\\*c');
+    expect(escapeRegExpSpecialChars('(a|b)')).toBe('\\(a\\|b\\)');
 });
