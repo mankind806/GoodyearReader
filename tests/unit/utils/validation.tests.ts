@@ -2,7 +2,32 @@ import {DEFAULT_SETTINGS, DEFAULT_THEME} from '../../../src/defaults';
 import type {Theme, UserSettings} from '../../../src/definitions';
 import {ThemeEngine} from '../../../src/generators/theme-engines';
 import {AutomationMode} from '../../../src/utils/automation';
-import {validateSettings, validateTheme} from '../../../src/utils/validation';
+import {validateSettings, validateTheme, isSafeSelector} from '../../../src/utils/validation';
+
+test('isSafeSelector', () => {
+    // Valid selectors
+    expect(isSafeSelector('.class')).toBe(true);
+    expect(isSafeSelector('#id')).toBe(true);
+    expect(isSafeSelector('button')).toBe(true);
+    expect(isSafeSelector('button:nth-child(1)')).toBe(true);
+    expect(isSafeSelector('.settings-tab-panel__button:nth-child(4)')).toBe(true);
+    expect(isSafeSelector('.preview-design-button')).toBe(true);
+    expect(isSafeSelector('body')).toBe(true);
+    expect(isSafeSelector('div > span')).toBe(true);
+    expect(isSafeSelector('header h1#title')).toBe(true);
+    expect(isSafeSelector('*')).toBe(true);
+    expect(isSafeSelector('div + p')).toBe(true);
+    expect(isSafeSelector('div ~ p')).toBe(true);
+
+    // Invalid selectors
+    expect(isSafeSelector('img[onerror]')).toBe(false);
+    expect(isSafeSelector('<script>')).toBe(false);
+    expect(isSafeSelector('button[onclick]')).toBe(false);
+    expect(isSafeSelector('div; background: red')).toBe(false);
+    expect(isSafeSelector('url(javascript:alert(1))')).toBe(false);
+    expect(isSafeSelector('')).toBe(false);
+    expect(isSafeSelector(null as any)).toBe(false);
+});
 
 test('Settings Validation', () => {
     const defaultTheme = JSON.parse(JSON.stringify(DEFAULT_THEME));

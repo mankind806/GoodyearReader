@@ -222,3 +222,7 @@ export function validateTheme(theme: Partial<Theme> | null | undefined): ThemeVa
 
     return {errors, theme};
 }
+
+export function isSafeSelector(selector: string): boolean {
+    return typeof selector === 'string' && selector !== '' && /^[a-zA-Z0-9\s\.\-_:()#\*>+~]+$/.test(selector);
+}

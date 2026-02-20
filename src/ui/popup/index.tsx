@@ -2,6 +2,7 @@ import {m} from 'malevic';
 import {sync} from 'malevic/dom';
 
 import type {ExtensionData, ExtensionActions, DebugMessageBGtoCS, DebugMessageBGtoUI} from '../../definitions';
+import {isSafeSelector} from '../../utils/validation';
 import {DebugMessageTypeBGtoUI} from '../../utils/message';
 import {isMobile, isFirefox} from '../../utils/platform';
 import Connector from '../connect/connector';
@@ -114,6 +115,10 @@ if (__TEST__) {
                 case 'popup-click': {
                     // The required element may not exist yet
                     const check = () => {
+                        if (!isSafeSelector(data)) {
+                            respond({id, error: `Safe selector validation failed: ${data}`});
+                            return;
+                        }
                         const element: HTMLElement | null = document.querySelector(data);
                         if (element) {
                             element.click();
@@ -129,6 +134,10 @@ if (__TEST__) {
                 case 'popup-exists': {
                     // The required element may not exist yet
                     const check = () => {
+                        if (!isSafeSelector(data)) {
+                            respond({id, error: `Safe selector validation failed: ${data}`});
+                            return;
+                        }
                         const element: HTMLElement | null = document.querySelector(data);
                         if (element) {
                             respond({id, data: true});
