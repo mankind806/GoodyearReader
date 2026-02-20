@@ -20,8 +20,9 @@ export function throttle<T extends(...args: any[]) => any>(callback: T): T & {ca
     }) as any;
 
     const cancel = () => {
-        // TODO: resolve cast once types are updated
-        cancelAnimationFrame(frameId!);
+        if (frameId) {
+            cancelAnimationFrame(frameId);
+        }
         pending = false;
         frameId = null;
     };
@@ -62,8 +63,9 @@ export function createAsyncTasksQueue(): AsyncTaskQueue {
 
     function cancel() {
         tasks.splice(0);
-        // TODO: resolve cast once types are updated
-        cancelAnimationFrame(frameId!);
+        if (frameId) {
+            cancelAnimationFrame(frameId);
+        }
         frameId = null;
     }
 
