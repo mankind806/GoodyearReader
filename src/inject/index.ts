@@ -12,6 +12,7 @@ import {collectCSS} from './dynamic-theme/css-collection';
 import {createOrUpdateStyle, removeStyle} from './style';
 import {createOrUpdateSVGFilter, removeSVGFilter} from './svg-filter';
 import {logWarn, logInfoCollapsed} from './utils/log';
+import {handleSendMessageError} from './utils/error';
 
 declare const __DEBUG__: boolean;
 declare const __PLUS__: boolean;
@@ -75,12 +76,7 @@ function sendMessage(message: MessageCStoBG | MessageCStoUI): true | undefined {
          *
          * Regular message passing errors are returned via rejected promise or runtime.lastError.
          */
-        if (error.message === 'Extension context invalidated.') {
-            console.log('Dark Reader: instance of old CS detected, cleaning up.');
-            cleanup();
-        } else {
-            console.log('Dark Reader: unexpected error during message passing.');
-        }
+        handleSendMessageError(error, cleanup);
     }
 }
 
