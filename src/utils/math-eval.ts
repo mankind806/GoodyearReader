@@ -63,7 +63,7 @@ export function evalMath(expression: string): number {
             // Get the arguments of for the operation(first two in the stack).
             const args = stack.splice(0, 2);
             // Excute it, because of reverse notation we first pass second item then the first item.
-            stack.push(op.exec(args[1], args[0]));
+            stack.unshift(op.exec(args[1], args[0]));
         } else {
             // Add the number to the stack.
             stack.unshift(parseFloat(rpnStack[i]));
